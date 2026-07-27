@@ -108,16 +108,25 @@ export default function DashboardPage() {
   const paymentModeMetrics = useMemo(() => {
     let cashExpense = 0;
     let onlineExpense = 0;
+    let cashIncome = 0;
+    let onlineIncome = 0;
 
     monthTransactions.forEach((tx) => {
       const type = (tx.type || '').toLowerCase();
+      const amt = Number(tx.amount) || 0;
+      const mode = (tx.mode || '').toLowerCase();
+
       if (type === 'debit') {
-        const amt = Number(tx.amount) || 0;
-        const mode = (tx.mode || '').toLowerCase();
         if (mode === 'cash') {
           cashExpense += amt;
         } else if (mode === 'online') {
           onlineExpense += amt;
+        }
+      } else if (type === 'credit') {
+        if (mode === 'cash') {
+          cashIncome += amt;
+        } else if (mode === 'online') {
+          onlineIncome += amt;
         }
       }
     });
@@ -126,7 +135,10 @@ export default function DashboardPage() {
     const cashPercent = metrics.expense > 0 ? (cashExpense / totalExpense) * 100 : 0;
     const onlinePercent = metrics.expense > 0 ? (onlineExpense / totalExpense) * 100 : 0;
 
-    return { cashExpense, onlineExpense, cashPercent, onlinePercent };
+    const cashBalance = cashIncome - cashExpense;
+    const onlineBalance = onlineIncome - onlineExpense;
+
+    return { cashExpense, onlineExpense, cashPercent, onlinePercent, cashIncome, onlineIncome, cashBalance, onlineBalance };
   }, [monthTransactions, metrics.expense]);
 
   const categoryMetrics = useMemo(() => {
@@ -246,17 +258,49 @@ export default function DashboardPage() {
               {metrics.netBalance >= 0 ? 'Surplus' : 'Deficit'}
             </Badge>
           </CardHeader>
-          <CardContent className="p-5 space-y-1">
-            <div
-              className={`text-3xl sm:text-4xl font-mono font-extrabold tracking-tight ${
-                metrics.netBalance >= 0 ? 'text-stone-900' : 'text-rose-800'
-              }`}
-            >
-              {formatCurrency(metrics.netBalance)}
+          <CardContent className="p-5 space-y-3">
+            <div>
+              <div
+                className={`text-3xl sm:text-4xl font-mono font-extrabold tracking-tight ${
+                  metrics.netBalance >= 0 ? 'text-stone-900' : 'text-rose-800'
+                }`}
+              >
+                {formatCurrency(metrics.netBalance)}
+              </div>
+              <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-100 text-stone-800 border border-stone-300 mt-1">
+                Net Cashflow
+              </span>
             </div>
-            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-100 text-stone-800 border border-stone-300">
-              Net Cashflow
-            </span>
+
+            {/* Cash & Online Balance Breakdown */}
+            <div className="border-t border-stone-200 pt-3 grid grid-cols-2 gap-3">
+              {/* Cash Balance */}
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-500 flex items-center gap-1">
+                  <span>💵</span> Cash
+                </span>
+                <div
+                  className={`text-base sm:text-lg font-mono font-extrabold tracking-tight ${
+                    paymentModeMetrics.cashBalance >= 0 ? 'text-emerald-800' : 'text-rose-800'
+                  }`}
+                >
+                  {formatCurrency(paymentModeMetrics.cashBalance)}
+                </div>
+              </div>
+              {/* Online Balance */}
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-500 flex items-center gap-1">
+                  <span>💳</span> Online
+                </span>
+                <div
+                  className={`text-base sm:text-lg font-mono font-extrabold tracking-tight ${
+                    paymentModeMetrics.onlineBalance >= 0 ? 'text-indigo-800' : 'text-rose-800'
+                  }`}
+                >
+                  {formatCurrency(paymentModeMetrics.onlineBalance)}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
