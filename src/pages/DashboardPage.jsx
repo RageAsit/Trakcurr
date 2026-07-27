@@ -1,0 +1,417 @@
+import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  FiPieChart,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiCalendar,
+  FiFilter,
+  FiArrowUpRight,
+  FiArrowDownLeft,
+  FiArrowRight,
+  FiHome,
+  FiShoppingBag,
+  FiCoffee,
+  FiNavigation,
+  FiTv,
+  FiBox,
+} from 'react-icons/fi';
+import { useTransactionStore } from '../store/useTransactionStore';
+import { formatCurrency, formatPercent } from '../utils/formatters';
+import {
+  SectionHeader,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Select,
+  Badge,
+  DocumentHeader,
+  DocumentFooter,
+} from '../components/ui';
+
+// Utility to generate month options
+const generateMonthOptions = () => {
+  const options = [];
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  for (let year = currentYear - 1; year <= currentYear + 1; year++) {
+    for (let month = 0; month < 12; month++) {
+      const dateObj = new Date(year, month, 1);
+      const value = `${year}-${String(month + 1).padStart(2, '0')}`;
+      const label = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+      options.push({ value, label });
+    }
+  }
+  return options;
+};
+
+const CATEGORIES_LIST = [
+  { name: 'Need', icon: FiHome },
+  { name: 'Food Ordered', icon: FiShoppingBag },
+  { name: 'Dine Out', icon: FiCoffee },
+  { name: 'Travel', icon: FiNavigation },
+  { name: 'Entertainment', icon: FiTv },
+  { name: 'Miscellaneous', icon: FiBox },
+];
+
+const formatDate = (dateStr) => {
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+};
+
+export default function DashboardPage() {
+  const { transactions } = useTransactionStore();
+
+  const currentMonthValue = new Date().toISOString().substring(0, 7);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthValue);
+
+  const monthOptions = useMemo(() => generateMonthOptions(), []);
+
+  const selectedMonthLabel = useMemo(() => {
+    const found = monthOptions.find((m) => m.value === selectedMonth);
+    if (found) return found.label;
+    const [year, month] = selectedMonth.split('-');
+    const dateObj = new Date(Number(year), Number(month) - 1, 1);
+    return dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+  }, [selectedMonth, monthOptions]);
+
+  const monthTransactions = useMemo(() => {
+    return transactions.filter((tx) => tx.date && tx.date.startsWith(selectedMonth));
+  }, [transactions, selectedMonth]);
+
+  const metrics = useMemo(() => {
+    let income = 0;
+    let expense = 0;
+
+    monthTransactions.forEach((tx) => {
+      const amt = Number(tx.amount) || 0;
+      const type = (tx.type || '').toLowerCase();
+      if (type === 'credit') {
+        income += amt;
+      } else if (type === 'debit') {
+        expense += amt;
+      }
+    });
+
+    const netBalance = income - expense;
+    const count = monthTransactions.length;
+
+    return { income, expense, netBalance, count };
+  }, [monthTransactions]);
+
+  const paymentModeMetrics = useMemo(() => {
+    let cashExpense = 0;
+    let onlineExpense = 0;
+
+    monthTransactions.forEach((tx) => {
+      const type = (tx.type || '').toLowerCase();
+      if (type === 'debit') {
+        const amt = Number(tx.amount) || 0;
+        const mode = (tx.mode || '').toLowerCase();
+        if (mode === 'cash') {
+          cashExpense += amt;
+        } else if (mode === 'online') {
+          onlineExpense += amt;
+        }
+      }
+    });
+
+    const totalExpense = metrics.expense || 1;
+    const cashPercent = metrics.expense > 0 ? (cashExpense / totalExpense) * 100 : 0;
+    const onlinePercent = metrics.expense > 0 ? (onlineExpense / totalExpense) * 100 : 0;
+
+    return { cashExpense, onlineExpense, cashPercent, onlinePercent };
+  }, [monthTransactions, metrics.expense]);
+
+  const categoryMetrics = useMemo(() => {
+    const totals = {};
+    CATEGORIES_LIST.forEach((cat) => {
+      totals[cat.name] = 0;
+    });
+
+    monthTransactions.forEach((tx) => {
+      const type = (tx.type || '').toLowerCase();
+      if (type === 'debit') {
+        const amt = Number(tx.amount) || 0;
+        const catName = tx.category;
+        if (totals[catName] !== undefined) {
+          totals[catName] += amt;
+        } else {
+          totals['Miscellaneous'] += amt;
+        }
+      }
+    });
+
+    const totalExpense = metrics.expense > 0 ? metrics.expense : 1;
+
+    return CATEGORIES_LIST.map((cat) => {
+      const spent = totals[cat.name] || 0;
+      const percent = metrics.expense > 0 ? (spent / totalExpense) * 100 : 0;
+      return {
+        ...cat,
+        spent,
+        percent,
+      };
+    });
+  }, [monthTransactions, metrics.expense]);
+
+  const recentMonthTransactions = useMemo(() => {
+    return [...monthTransactions]
+      .sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime())
+      .slice(0, 5);
+  }, [monthTransactions]);
+
+  return (
+    <div className="space-y-6">
+      {/* Document Header */}
+      <DocumentHeader
+        docType="EXECUTIVE SUMMARY"
+        docRef="EFS-2026-07"
+        title="Executive Financial Summary"
+        subtitle="CEO monthly financial metrics & statement performance indicators"
+        icon={FiPieChart}
+        period={selectedMonthLabel}
+      />
+
+      {/* Period Selector */}
+      <Card>
+        <CardHeader variant="dark">
+          <CardTitle icon={FiCalendar} iconColor="text-amber-400">Statement Period</CardTitle>
+          <Badge variant="muted">{selectedMonthLabel}</Badge>
+        </CardHeader>
+        <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-widest block">
+              Reporting Month
+            </span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-stone-900 uppercase tracking-wider font-display mt-0.5">
+              {selectedMonthLabel}
+            </h2>
+          </div>
+
+          <Select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            options={monthOptions}
+            className="min-w-[220px]"
+          />
+        </CardContent>
+      </Card>
+
+      {/* 4 Metric Cards — Stripe / Linear design with black title strip, icon, large financial value & small label */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {/* Income */}
+        <Card className="border-l-4 border-l-emerald-600">
+          <CardHeader variant="dark">
+            <CardTitle icon={FiArrowDownLeft} iconColor="text-emerald-400">Total Income</CardTitle>
+            <Badge variant="emerald">Credits</Badge>
+          </CardHeader>
+          <CardContent className="p-5 space-y-1">
+            <div className="text-3xl sm:text-4xl font-mono font-extrabold text-stone-900 tracking-tight">
+              {formatCurrency(metrics.income)}
+            </div>
+            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+              Monthly Credits
+            </span>
+          </CardContent>
+        </Card>
+
+        {/* Expense */}
+        <Card className="border-l-4 border-l-rose-600">
+          <CardHeader variant="dark">
+            <CardTitle icon={FiArrowUpRight} iconColor="text-rose-400">Total Expense</CardTitle>
+            <Badge variant="rose">Debits</Badge>
+          </CardHeader>
+          <CardContent className="p-5 space-y-1">
+            <div className="text-3xl sm:text-4xl font-mono font-extrabold text-stone-900 tracking-tight">
+              {formatCurrency(metrics.expense)}
+            </div>
+            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200">
+              Monthly Debits
+            </span>
+          </CardContent>
+        </Card>
+
+        {/* Net Balance */}
+        <Card className="border-l-4 border-l-stone-900">
+          <CardHeader variant="dark">
+            <CardTitle icon={FiPieChart} iconColor="text-amber-400">Net Balance</CardTitle>
+            <Badge variant={metrics.netBalance >= 0 ? 'emerald' : 'rose'}>
+              {metrics.netBalance >= 0 ? 'Surplus' : 'Deficit'}
+            </Badge>
+          </CardHeader>
+          <CardContent className="p-5 space-y-1">
+            <div
+              className={`text-3xl sm:text-4xl font-mono font-extrabold tracking-tight ${
+                metrics.netBalance >= 0 ? 'text-stone-900' : 'text-rose-800'
+              }`}
+            >
+              {formatCurrency(metrics.netBalance)}
+            </div>
+            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-100 text-stone-800 border border-stone-300">
+              Net Cashflow
+            </span>
+          </CardContent>
+        </Card>
+
+        {/* Total Entries */}
+        <Card className="border-l-4 border-l-stone-500">
+          <CardHeader variant="dark">
+            <CardTitle icon={FiFilter} iconColor="text-stone-300">Total Entries</CardTitle>
+            <Badge variant="muted">{metrics.count || '0'}</Badge>
+          </CardHeader>
+          <CardContent className="p-5 space-y-1">
+            <div className="text-3xl sm:text-4xl font-mono font-extrabold text-stone-900 tracking-tight">
+              {metrics.count || '0'}
+            </div>
+            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-100 text-stone-800 border border-stone-300">
+              Logged Items
+            </span>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Payment Mode Breakdown */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader variant="dark">
+            <CardTitle icon={FiShoppingBag} iconColor="text-amber-400">Cash Outflow</CardTitle>
+            <Badge variant="muted">Cash</Badge>
+          </CardHeader>
+          <CardContent className="p-5 flex items-center justify-between gap-4">
+            <div className="space-y-1 min-w-0">
+              <div className="text-2xl sm:text-3xl font-mono font-extrabold text-stone-900">
+                {formatCurrency(paymentModeMetrics.cashExpense)}
+              </div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-stone-600 block">
+                {formatPercent(paymentModeMetrics.cashPercent)} of expenses
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader variant="dark">
+            <CardTitle icon={FiTv} iconColor="text-indigo-400">Online Outflow</CardTitle>
+            <Badge variant="muted">Online</Badge>
+          </CardHeader>
+          <CardContent className="p-5 flex items-center justify-between gap-4">
+            <div className="space-y-1 min-w-0">
+              <div className="text-2xl sm:text-3xl font-mono font-extrabold text-stone-900">
+                {formatCurrency(paymentModeMetrics.onlineExpense)}
+              </div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-stone-600 block">
+                {formatPercent(paymentModeMetrics.onlinePercent)} of expenses
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Category Breakdown */}
+      <Card>
+        <CardHeader variant="dark">
+          <CardTitle icon={FiBox} iconColor="text-amber-400">Category Breakdown</CardTitle>
+          <span className="text-xs font-mono font-bold uppercase tracking-wider text-stone-200">
+            Total: {formatCurrency(metrics.expense)}
+          </span>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          <div className="divide-y divide-stone-200">
+            {categoryMetrics.map((cat) => (
+              <div key={cat.name} className="px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-[#fcfbf9] transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-1.5 rounded bg-[#111111] text-stone-100 shrink-0">
+                    <cat.icon className="text-xs" />
+                  </div>
+                  <span className="text-xs font-bold font-mono uppercase tracking-wider text-stone-900">{cat.name}</span>
+                </div>
+
+                <div className="flex items-center gap-4 shrink-0">
+                  <span className="text-xs font-mono font-bold text-stone-500">
+                    {formatPercent(cat.percent)}
+                  </span>
+                  <span className="text-sm font-mono font-extrabold text-stone-900 min-w-[90px] text-right">
+                    {formatCurrency(cat.spent)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader variant="dark">
+          <CardTitle icon={FiTrendingUp} iconColor="text-amber-400">Recent Activity</CardTitle>
+          <Link
+            to="/transactions"
+            className="inline-flex items-center gap-1.5 text-xs font-mono font-bold uppercase tracking-wider text-stone-300 hover:text-white transition-colors"
+          >
+            <span>View All</span>
+            <FiArrowRight className="text-xs" />
+          </Link>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          {recentMonthTransactions.length === 0 ? (
+            <div className="p-10 text-center">
+              <p className="text-xs font-mono font-bold uppercase tracking-wider text-stone-500">
+                No statement entries for {selectedMonthLabel}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-stone-200">
+              {recentMonthTransactions.map((tx) => {
+                const isCredit = (tx.type || '').toLowerCase() === 'credit';
+                return (
+                  <div
+                    key={tx.id}
+                    className="px-5 py-3.5 flex items-center justify-between gap-4 hover:bg-[#fcfbf9] transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`p-1.5 rounded shrink-0 ${
+                          isCredit
+                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                            : 'bg-rose-950 text-rose-300 border border-rose-800'
+                        }`}
+                      >
+                        {isCredit ? <FiArrowDownLeft className="text-sm" /> : <FiArrowUpRight className="text-sm" />}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-stone-900 truncate">{tx.description}</div>
+                        <div className="text-[11px] text-stone-500 font-mono mt-0.5 uppercase tracking-wide">
+                          {formatDate(tx.date)} · {tx.category} · {tx.mode}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`text-sm font-mono font-extrabold shrink-0 text-right ${
+                        isCredit ? 'text-emerald-800' : 'text-rose-800'
+                      }`}
+                    >
+                      {formatCurrency(isCredit ? Number(tx.amount) : -Number(tx.amount), { sign: true })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Document Footer */}
+      <DocumentFooter docRef="EFS-2026-07" pageNumber="1 OF 1" />
+    </div>
+  );
+}
