@@ -936,6 +936,7 @@ const YearlyComparisonView = memo(function YearlyComparisonView({ targetYear, ye
 /* COMPONENT: Last 12 Months Dashboard (MEMOIZED) */
 /* ==================================================================== */
 const Last12MonthsDashboard = memo(function Last12MonthsDashboard({ analyticsData }) {
+  const { symbol: currencySymbol } = useCurrency();
   const { totalIncome, totalExpense, netBalance, savingsTotals, monthlySeries = [] } = analyticsData;
   const numMonths = monthlySeries.length || 12;
 
@@ -1471,8 +1472,8 @@ const MonthlyComparisonView = memo(function MonthlyComparisonView({ selectedMont
               Monthly Statement Comparison
             </CardTitle>
             <CardDescription className="font-mono">
-              Comparing <span className="text-stone-900 font-bold">{currentLabel}</span> vs{' '}
-              <span className="text-stone-700 font-bold">{baselineLabel}</span>
+              Comparing <span className="text-stone-50 font-bold">{currentLabel}</span> vs{' '}
+              <span className="text-stone-50 font-bold">{baselineLabel}</span>
             </CardDescription>
           </div>
 
