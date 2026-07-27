@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FiCheckCircle, FiAlertCircle, FiInfo, FiX } from 'react-icons/fi';
 
 export function Toast({
@@ -40,7 +41,7 @@ export function Toast({
   const currentType = typeConfig[type] || typeConfig.success;
   const Icon = currentType.icon;
 
-  return (
+  return createPortal(
     <div
       className="fixed bottom-6 right-6 z-50 animate-page-enter"
     >
@@ -59,6 +60,7 @@ export function Toast({
           </button>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

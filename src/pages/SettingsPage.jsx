@@ -38,6 +38,7 @@ export default function SettingsPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
+
   const currentCurrencyInfo = getCurrencyInfo(currency || 'INR');
 
   const showSuccess = (msg) => {
@@ -147,6 +148,7 @@ export default function SettingsPage() {
         message={toastMessage}
         type="success"
       />
+
 
       {/* Confirmation Dialog */}
       <ConfirmDialog

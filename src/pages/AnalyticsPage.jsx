@@ -476,17 +476,17 @@ const AutoInsightsPanel = memo(function AutoInsightsPanel({ analyticsData }) {
   return (
     <Card>
       <CardHeader border>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+          <div className="min-w-0">
             <CardTitle className="flex items-center gap-2 font-display">
-              <FiCpu className="text-stone-900 text-base" />
+              <FiCpu className="text-stone-900 text-base shrink-0" />
               Automated Statement Highlights
             </CardTitle>
             <CardDescription className="font-mono">
               Key observations and pattern metrics extracted from statement logs
             </CardDescription>
           </div>
-          <Badge variant="indigo" showDot>
+          <Badge variant="indigo" showDot className="shrink-0 self-start sm:self-center">
             Auto Summary
           </Badge>
         </div>
@@ -759,13 +759,13 @@ const YearlyComparisonView = memo(function YearlyComparisonView({ targetYear, ye
               Year-to-Year Statement Audit
             </CardTitle>
             <CardDescription className="font-mono">
-              Comparing <span className="text-stone-900 font-bold">Year {targetYear}</span> vs{' '}
-              <span className="text-stone-700 font-bold">Year {baselineYear}</span>
+              Comparing <span className="text-stone-50 font-bold">Year {targetYear}</span> vs{' '}
+              <span className="text-stone-50 font-bold">Year {baselineYear}</span>
             </CardDescription>
           </div>
 
           <div className="flex items-center gap-2.5">
-            <span className="text-xs font-mono font-bold text-stone-600">Baseline Year:</span>
+            <span className="text-xs font-mono font-bold text-stone-300">Baseline Year:</span>
             <Select
               value={baselineYear}
               onChange={(e) => setBaselineYear(e.target.value)}
