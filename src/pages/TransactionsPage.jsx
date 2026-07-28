@@ -157,7 +157,7 @@ export default function TransactionsPage() {
     description: '',
     category: 'Need',
     type: 'Debit',
-    mode: 'Cash',
+    mode: 'Online',
   };
 
   const {
@@ -227,7 +227,7 @@ export default function TransactionsPage() {
     setValue('description', tx.description);
     setValue('category', tx.category || 'Need');
     setValue('type', tx.type || 'Debit');
-    setValue('mode', tx.mode || 'Cash');
+    setValue('mode', tx.mode || 'Online');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -369,8 +369,8 @@ export default function TransactionsPage() {
               <Select
                 label="Mode"
                 options={[
-                  { value: 'Cash', label: 'Cash' },
                   { value: 'Online', label: 'Online' },
+                  { value: 'Cash', label: 'Cash' },
                 ]}
                 {...register('mode')}
               />

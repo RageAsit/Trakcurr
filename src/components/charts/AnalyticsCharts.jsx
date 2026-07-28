@@ -34,10 +34,23 @@ export const CustomChartTooltip = ({ active, payload, label, formatter }) => {
             ? '-'
             : formatCurrency(val);
 
+          const rawColor = entry.color || entry.payload?.fill || '#38bdf8';
+          const isDarkColor =
+            !rawColor ||
+            rawColor === '#1c1917' ||
+            rawColor === '#000000' ||
+            rawColor === '#000' ||
+            rawColor === '#111111' ||
+            rawColor === '#171717' ||
+            rawColor === '#18181b' ||
+            rawColor === '#0f172a';
+
+          const textColor = isDarkColor ? '#38bdf8' : rawColor;
+
           return (
             <div key={`item-${index}`} className="flex items-center justify-between gap-4">
-              <span style={{ color: entry.color || entry.payload?.fill }} className="font-semibold flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ backgroundColor: entry.color || entry.payload?.fill }} />
+              <span style={{ color: textColor }} className="font-semibold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ backgroundColor: textColor }} />
                 {entry.name}:
               </span>
               <span className="font-bold text-white">{formattedVal}</span>

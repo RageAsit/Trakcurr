@@ -492,7 +492,7 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
           height={260}
           series={[
             { key: 'CumulativeSavings', name: 'Cumulative Savings', color: '#16a34a', strokeWidth: 2.5 },
-            { key: 'NetSavings', name: 'Monthly Net', color: '#1c1917', strokeWidth: 1.5 },
+            { key: 'NetSavings', name: 'Monthly Net', color: '#2563eb', strokeWidth: 2 },
           ]}
         />
 

@@ -28,7 +28,7 @@ export const useTransactionStore = create((set, get) => ({
       amount: Number(newTx.amount) || 0,
       type: newTx.type || 'debit',
       category: newTx.category || 'Need',
-      mode: newTx.mode || 'cash',
+      mode: newTx.mode || 'online',
       date: newTx.date || new Date().toISOString().split('T')[0],
     };
 

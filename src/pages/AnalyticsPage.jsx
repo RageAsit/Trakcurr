@@ -124,7 +124,7 @@ const CATEGORIES_ICONS = {
 };
 
 const CATEGORY_COLORS = {
-  Need: '#1c1917',
+  Need: '#475569',
   'Food Ordered': '#d97706',
   'Dine Out': '#e11d48',
   Travel: '#0284c7',
@@ -1075,8 +1075,8 @@ const Last12MonthsDashboard = memo(function Last12MonthsDashboard({ analyticsDat
         height={300}
         series={[
           { key: 'Income', name: 'Monthly Income', color: '#16a34a', strokeWidth: 2.5 },
-          { key: 'Expense', name: 'Monthly Expense', color: '#b91c1c', strokeWidth: 2.5 },
-          { key: 'Savings', name: 'Monthly Savings', color: '#1c1917', strokeWidth: 2 },
+          { key: 'Expense', name: 'Monthly Expense', color: '#dc2626', strokeWidth: 2.5 },
+          { key: 'Savings', name: 'Monthly Savings', color: '#2563eb', strokeWidth: 2.5 },
         ]}
       />
 
@@ -1095,7 +1095,7 @@ const Last12MonthsDashboard = memo(function Last12MonthsDashboard({ analyticsDat
           title="Monthly Expense Trend"
           badge="12 Months"
           height={200}
-          series={[{ key: 'Expense', name: 'Expense', color: '#b91c1c' }]}
+          series={[{ key: 'Expense', name: 'Expense', color: '#dc2626' }]}
         />
         <AnalyticsLineChart
           data={chartData}
@@ -1103,7 +1103,7 @@ const Last12MonthsDashboard = memo(function Last12MonthsDashboard({ analyticsDat
           title="Monthly Savings Trend"
           badge="12 Months"
           height={200}
-          series={[{ key: 'Savings', name: 'Savings', color: '#1c1917' }]}
+          series={[{ key: 'Savings', name: 'Savings', color: '#2563eb' }]}
         />
       </div>
 

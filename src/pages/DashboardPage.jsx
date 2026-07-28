@@ -218,39 +218,23 @@ export default function DashboardPage() {
 
       {/* 4 Metric Cards — Stripe / Linear design with black title strip, icon, large financial value & small label */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Income */}
-        <Card className="border-l-4 border-l-emerald-600">
+        {/* 1. Total Entries */}
+        <Card className="border-l-4 border-l-stone-500">
           <CardHeader variant="dark">
-            <CardTitle icon={FiArrowDownLeft} iconColor="text-emerald-400">Total Income</CardTitle>
-            <Badge variant="emerald">Credits</Badge>
+            <CardTitle icon={FiFilter} iconColor="text-stone-300">Total Entries</CardTitle>
+            <Badge variant="muted">{metrics.count || '0'}</Badge>
           </CardHeader>
           <CardContent className="p-5 space-y-1">
             <div className="text-3xl sm:text-4xl font-mono font-extrabold text-stone-900 tracking-tight">
-              {formatCurrency(metrics.income)}
+              {metrics.count || '0'}
             </div>
-            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-              Monthly Credits
+            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-100 text-stone-800 border border-stone-300">
+              Logged Items
             </span>
           </CardContent>
         </Card>
 
-        {/* Expense */}
-        <Card className="border-l-4 border-l-rose-600">
-          <CardHeader variant="dark">
-            <CardTitle icon={FiArrowUpRight} iconColor="text-rose-400">Total Expense</CardTitle>
-            <Badge variant="rose">Debits</Badge>
-          </CardHeader>
-          <CardContent className="p-5 space-y-1">
-            <div className="text-3xl sm:text-4xl font-mono font-extrabold text-stone-900 tracking-tight">
-              {formatCurrency(metrics.expense)}
-            </div>
-            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200">
-              Monthly Debits
-            </span>
-          </CardContent>
-        </Card>
-
-        {/* Net Balance */}
+        {/* 2. Net Balance */}
         <Card className="border-l-4 border-l-stone-900">
           <CardHeader variant="dark">
             <CardTitle icon={FiPieChart} iconColor="text-amber-400">Net Balance</CardTitle>
@@ -304,18 +288,34 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Total Entries */}
-        <Card className="border-l-4 border-l-stone-500">
+        {/* 3. Total Income */}
+        <Card className="border-l-4 border-l-emerald-600">
           <CardHeader variant="dark">
-            <CardTitle icon={FiFilter} iconColor="text-stone-300">Total Entries</CardTitle>
-            <Badge variant="muted">{metrics.count || '0'}</Badge>
+            <CardTitle icon={FiArrowDownLeft} iconColor="text-emerald-400">Total Income</CardTitle>
+            <Badge variant="emerald">Credits</Badge>
           </CardHeader>
           <CardContent className="p-5 space-y-1">
             <div className="text-3xl sm:text-4xl font-mono font-extrabold text-stone-900 tracking-tight">
-              {metrics.count || '0'}
+              {formatCurrency(metrics.income)}
             </div>
-            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-100 text-stone-800 border border-stone-300">
-              Logged Items
+            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+              Monthly Credits
+            </span>
+          </CardContent>
+        </Card>
+
+        {/* 4. Total Expense */}
+        <Card className="border-l-4 border-l-rose-600">
+          <CardHeader variant="dark">
+            <CardTitle icon={FiArrowUpRight} iconColor="text-rose-400">Total Expense</CardTitle>
+            <Badge variant="rose">Debits</Badge>
+          </CardHeader>
+          <CardContent className="p-5 space-y-1">
+            <div className="text-3xl sm:text-4xl font-mono font-extrabold text-stone-900 tracking-tight">
+              {formatCurrency(metrics.expense)}
+            </div>
+            <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200">
+              Monthly Debits
             </span>
           </CardContent>
         </Card>
@@ -323,23 +323,7 @@ export default function DashboardPage() {
 
       {/* Payment Mode Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader variant="dark">
-            <CardTitle icon={FiShoppingBag} iconColor="text-amber-400">Cash Outflow</CardTitle>
-            <Badge variant="muted">Cash</Badge>
-          </CardHeader>
-          <CardContent className="p-5 flex items-center justify-between gap-4">
-            <div className="space-y-1 min-w-0">
-              <div className="text-2xl sm:text-3xl font-mono font-extrabold text-stone-900">
-                {formatCurrency(paymentModeMetrics.cashExpense)}
-              </div>
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-stone-600 block">
-                {formatPercent(paymentModeMetrics.cashPercent)} of expenses
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
+        {/* Online Outflow (Left) */}
         <Card>
           <CardHeader variant="dark">
             <CardTitle icon={FiTv} iconColor="text-indigo-400">Online Outflow</CardTitle>
@@ -352,6 +336,24 @@ export default function DashboardPage() {
               </div>
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-stone-600 block">
                 {formatPercent(paymentModeMetrics.onlinePercent)} of expenses
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cash Outflow (Right) */}
+        <Card>
+          <CardHeader variant="dark">
+            <CardTitle icon={FiShoppingBag} iconColor="text-amber-400">Cash Outflow</CardTitle>
+            <Badge variant="muted">Cash</Badge>
+          </CardHeader>
+          <CardContent className="p-5 flex items-center justify-between gap-4">
+            <div className="space-y-1 min-w-0">
+              <div className="text-2xl sm:text-3xl font-mono font-extrabold text-stone-900">
+                {formatCurrency(paymentModeMetrics.cashExpense)}
+              </div>
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-stone-600 block">
+                {formatPercent(paymentModeMetrics.cashPercent)} of expenses
               </span>
             </div>
           </CardContent>
