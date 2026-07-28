@@ -4,7 +4,7 @@ import { FiMenu, FiX, FiLogOut } from 'react-icons/fi';
 import { APP_NAME } from '../data/constants';
 import { NAV_ITEMS } from './Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { UserAvatar } from './ui';
+import { UserAvatar, BrandLogo } from './ui';
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,13 +28,19 @@ export default function MobileNav() {
     <header className="md:hidden sticky top-0 z-40 bg-[#111111] text-stone-100 border-b border-stone-800">
       {/* Top Header Bar */}
       <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
+          <div className="p-1.5 rounded-lg bg-stone-900 border border-stone-800 text-amber-400">
+            <BrandLogo className="w-5 h-5 text-amber-400" />
+          </div>
           {user ? (
             <UserAvatar user={user} size="sm" />
           ) : null}
           <div>
-            <span className="font-extrabold text-sm tracking-wider font-display uppercase text-white">{APP_NAME}</span>
-            <span className="text-[10px] text-stone-400 block font-mono uppercase tracking-wide">
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-sm tracking-wider font-display uppercase text-white leading-none">{APP_NAME}</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            </div>
+            <span className="text-[9px] text-stone-400 block font-mono uppercase tracking-widest mt-0.5 font-semibold">
               {activeItem.label}
             </span>
           </div>

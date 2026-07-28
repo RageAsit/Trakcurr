@@ -1,4 +1,5 @@
 import { useAuth } from '../../context/AuthContext';
+import { BrandLogo } from './BrandLogo';
 
 export function DocumentHeader({
   docType = 'FINANCIAL STATEMENT',
@@ -18,8 +19,9 @@ export function DocumentHeader({
       {/* Official Document Meta Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono font-bold uppercase tracking-wider text-stone-500 bg-[#f6f4ee] px-3.5 py-2 rounded-md border border-stone-300">
         <div className="flex items-center gap-3">
-          <span className="text-stone-900 font-extrabold bg-stone-200 px-2 py-0.5 rounded border border-stone-400">
-            {docType}
+          <span className="flex items-center gap-1.5 text-stone-900 font-extrabold bg-stone-200 px-2 py-0.5 rounded border border-stone-400">
+            <BrandLogo className="w-3.5 h-3.5 text-stone-900 shrink-0" />
+            <span>{docType}</span>
           </span>
           <span className="text-stone-600">REF: {docRef}</span>
         </div>

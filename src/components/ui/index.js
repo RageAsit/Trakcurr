@@ -13,3 +13,4 @@ export { Skeleton } from './Skeleton';
 export { UserAvatar } from './UserAvatar';
 export { DocumentHeader } from './DocumentHeader';
 export { DocumentFooter } from './DocumentFooter';
+export { BrandLogo } from './BrandLogo';

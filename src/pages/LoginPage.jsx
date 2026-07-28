@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { FiFileText, FiAlertCircle, FiInfo, FiShield } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import { APP_NAME } from '../data/constants';
+import { BrandLogo } from '../components/ui';
 
 export default function LoginPage() {
   const { user, signInWithGoogle, error, clearError, hasFirebaseConfig } = useAuth();
@@ -40,19 +41,24 @@ export default function LoginPage() {
         {/* LOGIN FLOATING LEDGER SHEET */}
         <div className="floating-ledger-paper overflow-hidden transition-all">
           {/* Statement Header Rule */}
-          <div className="bg-stone-900 text-stone-100 p-6 text-center space-y-3 relative">
-            <div className="inline-flex p-3 rounded-xl bg-stone-800 border border-stone-700 text-amber-400 shadow-inner">
-              <FiFileText className="text-3xl" />
+          <div className="bg-stone-900 text-stone-100 p-6 text-center space-y-4 relative">
+            <div className="flex items-center justify-center gap-3.5">
+              <div className="p-3 rounded-2xl bg-stone-800/90 border border-stone-700/80 text-amber-400 shadow-md ring-1 ring-white/10 shrink-0">
+                <BrandLogo className="w-8 h-8 text-amber-400" glow />
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-black uppercase tracking-widest font-display text-stone-50 leading-none">
+                    {APP_NAME}
+                  </h1>
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                </div>
+                <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400/90 mt-1">
+                  Statement Ledger & Budget Sheet
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-extrabold uppercase tracking-wider font-display text-stone-50">
-                {APP_NAME}
-              </h1>
-              <p className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 mt-1">
-                Statement Ledger & Budget Sheet
-              </p>
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-stone-800 border border-stone-700 text-[10px] font-mono font-bold uppercase tracking-widest text-stone-300">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-stone-800/90 border border-stone-700 text-[10px] font-mono font-bold uppercase tracking-widest text-stone-300">
               <FiShield className="text-amber-400" />
               <span>Verified Authentication</span>
             </div>

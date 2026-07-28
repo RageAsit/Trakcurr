@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { FiPieChart, FiCreditCard, FiTrendingUp, FiBarChart2, FiSettings, FiLogOut } from 'react-icons/fi';
 import { APP_NAME } from '../data/constants';
 import { useAuth } from '../context/AuthContext';
-import { UserAvatar } from './ui';
+import { UserAvatar, BrandLogo } from './ui';
 
 export const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: FiPieChart },
@@ -26,9 +26,21 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-[#111111] text-stone-100 border-r border-stone-800 shrink-0 h-screen overflow-y-auto select-none justify-between z-30 shadow-xl">
       {/* Brand */}
-      <div className="px-5 pt-6 pb-5 border-b border-stone-800/80">
-        <h1 className="font-extrabold text-base tracking-wider text-white uppercase font-display">{APP_NAME}</h1>
-        <p className="text-[10px] text-stone-400 font-mono mt-0.5 tracking-widest uppercase">Personal Ledger</p>
+      <div className="px-5 pt-6 pb-5 border-b border-stone-800/80 flex items-center gap-3.5 group cursor-default">
+        <div className="p-2 rounded-xl bg-stone-900 border border-stone-800/90 shadow-sm text-amber-400 group-hover:border-amber-500/40 group-hover:bg-stone-850 transition-all duration-300">
+          <BrandLogo className="w-6 h-6 text-amber-400 group-hover:scale-105 transition-transform" glow />
+        </div>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-1.5">
+            <h1 className="font-extrabold text-base tracking-widest text-white uppercase font-display leading-none">
+              {APP_NAME}
+            </h1>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+          </div>
+          <p className="text-[9px] text-stone-400 font-mono mt-1 tracking-widest uppercase font-semibold">
+            Personal Ledger
+          </p>
+        </div>
       </div>
 
       {/* Navigation */}
