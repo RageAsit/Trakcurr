@@ -225,7 +225,7 @@ export default function DashboardPage() {
             <Badge variant="muted">{metrics.count || '0'}</Badge>
           </CardHeader>
           <CardContent className="p-5 space-y-1">
-            <div className="text-3xl sm:text-4xl font-mono font-extrabold text-stone-900 tracking-tight">
+            <div className="text-2xl sm:text-3xl xl:text-2xl 2xl:text-3xl font-mono font-extrabold text-stone-900 tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
               {metrics.count || '0'}
             </div>
             <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-100 text-stone-800 border border-stone-300">
@@ -245,7 +245,7 @@ export default function DashboardPage() {
           <CardContent className="p-5 space-y-3">
             <div>
               <div
-                className={`text-3xl sm:text-4xl font-mono font-extrabold tracking-tight ${
+                className={`text-2xl sm:text-3xl xl:text-2xl 2xl:text-3xl font-mono font-extrabold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis ${
                   metrics.netBalance >= 0 ? 'text-stone-900' : 'text-rose-800'
                 }`}
               >
@@ -264,7 +264,7 @@ export default function DashboardPage() {
                   <span>💵</span> Cash
                 </span>
                 <div
-                  className={`text-base sm:text-lg font-mono font-extrabold tracking-tight ${
+                  className={`text-base sm:text-lg font-mono font-extrabold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis ${
                     paymentModeMetrics.cashBalance >= 0 ? 'text-emerald-800' : 'text-rose-800'
                   }`}
                 >
@@ -277,7 +277,7 @@ export default function DashboardPage() {
                   <span>💳</span> Online
                 </span>
                 <div
-                  className={`text-base sm:text-lg font-mono font-extrabold tracking-tight ${
+                  className={`text-base sm:text-lg font-mono font-extrabold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis ${
                     paymentModeMetrics.onlineBalance >= 0 ? 'text-indigo-800' : 'text-rose-800'
                   }`}
                 >
@@ -295,7 +295,7 @@ export default function DashboardPage() {
             <Badge variant="emerald">Credits</Badge>
           </CardHeader>
           <CardContent className="p-5 space-y-1">
-            <div className="text-3xl sm:text-4xl font-mono font-extrabold text-stone-900 tracking-tight">
+            <div className="text-2xl sm:text-3xl xl:text-2xl 2xl:text-3xl font-mono font-extrabold text-stone-900 tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
               {formatCurrency(metrics.income)}
             </div>
             <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -311,7 +311,7 @@ export default function DashboardPage() {
             <Badge variant="rose">Debits</Badge>
           </CardHeader>
           <CardContent className="p-5 space-y-1">
-            <div className="text-3xl sm:text-4xl font-mono font-extrabold text-stone-900 tracking-tight">
+            <div className="text-2xl sm:text-3xl xl:text-2xl 2xl:text-3xl font-mono font-extrabold text-stone-900 tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
               {formatCurrency(metrics.expense)}
             </div>
             <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200">
