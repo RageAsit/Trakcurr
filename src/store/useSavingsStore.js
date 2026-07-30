@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import {
   addSavingsDoc,
+  updateSavingsDoc,
   deleteSavingsDoc,
   clearAllSavingsDocs,
 } from '../services/firestoreService';
@@ -51,6 +52,24 @@ export const useSavingsStore = create((set, get) => ({
     }
 
     return newSavingsTx;
+  },
+
+  // Update a savings transaction by ID in Cloud Firestore
+  updateSavingsTransaction: async (id, partialSavings) => {
+    const uid = auth?.currentUser?.uid;
+    if (uid) {
+      try {
+        await updateSavingsDoc(uid, id, partialSavings);
+      } catch (err) {
+        console.error('[SavingsStore] Error updating savings entry in Firestore:', err);
+      }
+    } else {
+      set((state) => ({
+        savingsTransactions: state.savingsTransactions.map((item) =>
+          item.id === id ? { ...item, ...partialSavings } : item
+        ),
+      }));
+    }
   },
 
   // Delete a savings transaction by ID in Cloud Firestore

@@ -10,6 +10,9 @@ import {
   FiBarChart2,
   FiAward,
   FiShield,
+  FiEdit2,
+  FiRefreshCw,
+  FiX,
 } from 'react-icons/fi';
 import { useSavingsStore } from '../store/useSavingsStore';
 import { formatCurrency, useCurrency } from '../utils/formatters';
@@ -25,6 +28,7 @@ import {
   DatePicker,
   Select,
   PrimaryButton,
+  SecondaryButton,
   Badge,
   Toast,
   ConfirmDialog,
@@ -35,9 +39,14 @@ import { AnalyticsLineChart, AnalyticsBarChart } from '../components/charts';
 
 export default function SavingsPage() {
   const { symbol: currencySymbol } = useCurrency();
-  const { savingsTransactions, addSavingsTransaction, deleteSavingsTransaction } =
-    useSavingsStore();
+  const {
+    savingsTransactions,
+    addSavingsTransaction,
+    deleteSavingsTransaction,
+    updateSavingsTransaction,
+  } = useSavingsStore();
 
+  const [editingId, setEditingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
@@ -55,6 +64,7 @@ export default function SavingsPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: defaultFormValues,
@@ -91,17 +101,55 @@ export default function SavingsPage() {
   const onSubmit = (data) => {
     const storeType = data.transactionType === 'Added' ? 'deposit' : 'withdraw';
 
-    addSavingsTransaction({
-      amount: Number(data.amount),
-      date: data.date,
-      description: data.description,
-      type: storeType,
-    });
+    if (editingId) {
+      if (updateSavingsTransaction) {
+        updateSavingsTransaction(editingId, {
+          amount: Number(data.amount),
+          date: data.date,
+          description: data.description,
+          type: storeType,
+        });
+      } else {
+        deleteSavingsTransaction(editingId);
+        addSavingsTransaction({
+          amount: Number(data.amount),
+          date: data.date,
+          description: data.description,
+          type: storeType,
+        });
+      }
 
-    setToastMessage(
-      `Savings ${data.transactionType === 'Added' ? 'deposit' : 'withdrawal'} of ${formatCurrency(Number(data.amount))} recorded!`
-    );
-    setShowToast(true);
+      setToastMessage(`Savings record "${data.description}" updated.`);
+      setShowToast(true);
+      setEditingId(null);
+      reset(defaultFormValues);
+    } else {
+      addSavingsTransaction({
+        amount: Number(data.amount),
+        date: data.date,
+        description: data.description,
+        type: storeType,
+      });
+
+      setToastMessage(
+        `Savings ${data.transactionType === 'Added' ? 'deposit' : 'withdrawal'} of ${formatCurrency(Number(data.amount))} recorded!`
+      );
+      setShowToast(true);
+      reset(defaultFormValues);
+    }
+  };
+
+  const handleEdit = (tx) => {
+    setEditingId(tx.id);
+    setValue('amount', tx.amount);
+    setValue('date', tx.date);
+    setValue('description', tx.description);
+    setValue('transactionType', tx.type === 'deposit' ? 'Added' : 'Withdrawn');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
     reset(defaultFormValues);
   };
 
@@ -201,8 +249,14 @@ export default function SavingsPage() {
       {/* SAVINGS TRANSACTION FORM */}
       <Card>
         <CardHeader variant="dark">
-          <CardTitle icon={FiPlusCircle} iconColor="text-amber-400">Record Savings Activity</CardTitle>
-          <Badge variant="muted">{savingsTransactions.length} Entries</Badge>
+          <CardTitle icon={FiPlusCircle} iconColor="text-amber-400">
+            {editingId ? 'Edit Savings Activity' : 'Record Savings Activity'}
+          </CardTitle>
+          {editingId ? (
+            <Badge variant="amber" showDot>Edit Mode</Badge>
+          ) : (
+            <Badge variant="muted">{savingsTransactions.length} Entries</Badge>
+          )}
         </CardHeader>
 
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -254,10 +308,30 @@ export default function SavingsPage() {
             </div>
           </CardContent>
 
-          <CardFooter border className="justify-end">
-            <PrimaryButton type="submit" isLoading={isSubmitting} leftIcon={FiPlusCircle}>
-              Save Record
-            </PrimaryButton>
+          <CardFooter border className="justify-end gap-3">
+            {editingId ? (
+              <>
+                <SecondaryButton type="button" onClick={handleCancelEdit} leftIcon={FiX}>
+                  Cancel
+                </SecondaryButton>
+                <PrimaryButton
+                  type="submit"
+                  leftIcon={FiRefreshCw}
+                  isLoading={isSubmitting}
+                >
+                  Update Record
+                </PrimaryButton>
+              </>
+            ) : (
+              <>
+                <SecondaryButton type="button" onClick={handleCancelEdit}>
+                  Reset
+                </SecondaryButton>
+                <PrimaryButton type="submit" isLoading={isSubmitting} leftIcon={FiPlusCircle}>
+                  Save Record
+                </PrimaryButton>
+              </>
+            )}
           </CardFooter>
         </form>
       </Card>
@@ -293,11 +367,14 @@ export default function SavingsPage() {
                 <tbody className="divide-y divide-stone-200 text-xs font-mono">
                   {sortedTransactions.map((tx) => {
                     const isDeposit = tx.type === 'deposit';
+                    const isEditing = tx.id === editingId;
 
                     return (
                       <tr
                         key={tx.id}
-                        className="transition-colors hover:bg-[#fcfbf9]"
+                        className={`transition-colors hover:bg-[#fcfbf9] ${
+                          isEditing ? 'bg-amber-100/60 font-semibold' : ''
+                        }`}
                       >
                         <td className="py-3 px-4 sm:px-6 text-stone-700 font-bold whitespace-nowrap">
                           {tx.date}
@@ -322,14 +399,24 @@ export default function SavingsPage() {
                           {formatCurrency(isDeposit ? Number(tx.amount) : -Number(tx.amount), { sign: true })}
                         </td>
                         <td className="py-3 px-4 sm:px-6 whitespace-nowrap text-center">
-                          <button
-                            onClick={() => setDeletingId(tx.id)}
-                            className="p-1.5 text-rose-700 hover:text-rose-950 hover:bg-rose-100 rounded-md transition-colors"
-                            title="Delete savings record"
-                            aria-label="Delete savings record"
-                          >
-                            <FiTrash2 className="text-sm" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => handleEdit(tx)}
+                              className="p-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-200 rounded-md transition-colors"
+                              title="Edit savings record"
+                              aria-label="Edit savings record"
+                            >
+                              <FiEdit2 className="text-sm" />
+                            </button>
+                            <button
+                              onClick={() => setDeletingId(tx.id)}
+                              className="p-1.5 text-rose-700 hover:text-rose-950 hover:bg-rose-100 rounded-md transition-colors"
+                              title="Delete savings record"
+                              aria-label="Delete savings record"
+                            >
+                              <FiTrash2 className="text-sm" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

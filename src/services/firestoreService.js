@@ -121,6 +121,15 @@ export async function addSavingsDoc(uid, savingsData) {
 }
 
 /**
+ * Update specific fields of a savings document
+ */
+export async function updateSavingsDoc(uid, savingsId, partialData) {
+  if (!db || !uid || !savingsId) return;
+  const docRef = doc(db, 'users', uid, 'savings', savingsId);
+  await updateDoc(docRef, partialData);
+}
+
+/**
  * Delete a savings entry document
  */
 export async function deleteSavingsDoc(uid, savingsId) {
