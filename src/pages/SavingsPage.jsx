@@ -13,6 +13,9 @@ import {
   FiEdit2,
   FiRefreshCw,
   FiX,
+  FiPieChart,
+  FiFilter,
+  FiLayers,
 } from 'react-icons/fi';
 import { useSavingsStore } from '../store/useSavingsStore';
 import { formatCurrency, useCurrency } from '../utils/formatters';
@@ -48,6 +51,7 @@ export default function SavingsPage() {
 
   const [editingId, setEditingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState('All');
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
 
@@ -57,6 +61,7 @@ export default function SavingsPage() {
     amount: '',
     date: todayStr,
     description: '',
+    category: 'Mutual Funds',
     transactionType: 'Added',
   };
 
@@ -70,16 +75,41 @@ export default function SavingsPage() {
     defaultValues: defaultFormValues,
   });
 
-  const { savingsTotal, totalAdded, totalWithdrawn } = useMemo(() => {
+  const {
+    savingsTotal,
+    totalAdded,
+    totalWithdrawn,
+    mfTotal,
+    mfAdded,
+    mfWithdrawn,
+    goldTotal,
+    goldAdded,
+    goldWithdrawn,
+  } = useMemo(() => {
     let added = 0;
     let withdrawn = 0;
+    let mfA = 0, mfW = 0;
+    let goldA = 0, goldW = 0;
 
     savingsTransactions.forEach((tx) => {
       const amt = Number(tx.amount) || 0;
-      if (tx.type === 'deposit') {
+      const cat = tx.category || 'Mutual Funds';
+      const isDeposit = tx.type === 'deposit';
+
+      if (isDeposit) {
         added += amt;
+        if (cat === 'Gold') {
+          goldA += amt;
+        } else {
+          mfA += amt;
+        }
       } else if (tx.type === 'withdraw') {
         withdrawn += amt;
+        if (cat === 'Gold') {
+          goldW += amt;
+        } else {
+          mfW += amt;
+        }
       }
     });
 
@@ -87,36 +117,47 @@ export default function SavingsPage() {
       savingsTotal: added - withdrawn,
       totalAdded: added,
       totalWithdrawn: withdrawn,
+      mfTotal: mfA - mfW,
+      mfAdded: mfA,
+      mfWithdrawn: mfW,
+      goldTotal: goldA - goldW,
+      goldAdded: goldA,
+      goldWithdrawn: goldW,
     };
   }, [savingsTransactions]);
 
+  const filteredTransactions = useMemo(() => {
+    if (activeCategoryFilter === 'All') return savingsTransactions;
+    return savingsTransactions.filter((tx) => {
+      const cat = tx.category || 'Mutual Funds';
+      return cat === activeCategoryFilter;
+    });
+  }, [savingsTransactions, activeCategoryFilter]);
+
   const sortedTransactions = useMemo(() => {
-    return [...savingsTransactions].sort((a, b) => {
+    return [...filteredTransactions].sort((a, b) => {
       const timeA = new Date(a.createdAt || a.date).getTime();
       const timeB = new Date(b.createdAt || b.date).getTime();
       return timeB - timeA;
     });
-  }, [savingsTransactions]);
+  }, [filteredTransactions]);
 
   const onSubmit = (data) => {
     const storeType = data.transactionType === 'Added' ? 'deposit' : 'withdraw';
+    const payload = {
+      amount: Number(data.amount),
+      date: data.date,
+      description: data.description,
+      category: data.category || 'Mutual Funds',
+      type: storeType,
+    };
 
     if (editingId) {
       if (updateSavingsTransaction) {
-        updateSavingsTransaction(editingId, {
-          amount: Number(data.amount),
-          date: data.date,
-          description: data.description,
-          type: storeType,
-        });
+        updateSavingsTransaction(editingId, payload);
       } else {
         deleteSavingsTransaction(editingId);
-        addSavingsTransaction({
-          amount: Number(data.amount),
-          date: data.date,
-          description: data.description,
-          type: storeType,
-        });
+        addSavingsTransaction(payload);
       }
 
       setToastMessage(`Savings record "${data.description}" updated.`);
@@ -124,15 +165,10 @@ export default function SavingsPage() {
       setEditingId(null);
       reset(defaultFormValues);
     } else {
-      addSavingsTransaction({
-        amount: Number(data.amount),
-        date: data.date,
-        description: data.description,
-        type: storeType,
-      });
+      addSavingsTransaction(payload);
 
       setToastMessage(
-        `Savings ${data.transactionType === 'Added' ? 'deposit' : 'withdrawal'} of ${formatCurrency(Number(data.amount))} recorded!`
+        `${data.category} ${data.transactionType === 'Added' ? 'deposit' : 'withdrawal'} of ${formatCurrency(Number(data.amount))} recorded!`
       );
       setShowToast(true);
       reset(defaultFormValues);
@@ -144,6 +180,7 @@ export default function SavingsPage() {
     setValue('amount', tx.amount);
     setValue('date', tx.date);
     setValue('description', tx.description);
+    setValue('category', tx.category || 'Mutual Funds');
     setValue('transactionType', tx.type === 'deposit' ? 'Added' : 'Withdrawn');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -187,21 +224,21 @@ export default function SavingsPage() {
         docType="SAVINGS PASSBOOK"
         docRef="SPB-9042-07"
         title="Savings & Reserves Passbook"
-        subtitle="Official reserve account statement & cumulative savings register"
+        subtitle="Official reserve account statement divided into Mutual Funds & Gold investments"
         icon={FiTrendingUp}
       />
 
-      {/* CURRENT SAVINGS STATEMENT CARD */}
+      {/* OVERALL ACCRUED SAVINGS STATEMENT */}
       <Card className="border-l-4 border-l-stone-900">
         <CardHeader variant="dark">
-          <CardTitle icon={FiShield} iconColor="text-amber-400">Total Accrued Savings Statement</CardTitle>
-          <Badge variant="emerald" showDot>Accrued Balance</Badge>
+          <CardTitle icon={FiShield} iconColor="text-amber-400">Total Accrued Savings & Portfolio</CardTitle>
+          <Badge variant="emerald" showDot>Total Reserves</Badge>
         </CardHeader>
         <CardContent className="p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="space-y-3">
               <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-500 block">
-                Net Cumulative Reserves
+                Net Cumulative Savings
               </span>
 
               <div
@@ -243,6 +280,61 @@ export default function SavingsPage() {
         </CardContent>
       </Card>
 
+      {/* MUTUAL FUNDS VS GOLD DIVISION CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* MUTUAL FUNDS CARD */}
+        <Card className="border-l-4 border-l-indigo-600 bg-white">
+          <CardHeader variant="dark">
+            <CardTitle icon={FiPieChart} iconColor="text-indigo-400">Mutual Funds Reserve</CardTitle>
+            <Badge variant="indigo" showDot>SIP & Funds</Badge>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-500 block">
+                Mutual Funds Balance
+              </span>
+              <div className="text-3xl font-mono font-extrabold text-indigo-950 mt-1">
+                {formatCurrency(mfTotal)}
+              </div>
+            </div>
+            <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-mono">
+              <span className="text-stone-600">
+                Deposited: <span className="font-bold text-emerald-700">{formatCurrency(mfAdded)}</span>
+              </span>
+              <span className="text-stone-600">
+                Withdrawn: <span className="font-bold text-rose-700">{formatCurrency(mfWithdrawn)}</span>
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* GOLD CARD */}
+        <Card className="border-l-4 border-l-amber-500 bg-white">
+          <CardHeader variant="dark">
+            <CardTitle icon={FiAward} iconColor="text-amber-400">Gold Investment Reserve</CardTitle>
+            <Badge variant="amber" showDot>Gold & Bullion</Badge>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-500 block">
+                Gold Reserve Balance
+              </span>
+              <div className="text-3xl font-mono font-extrabold text-amber-950 mt-1">
+                {formatCurrency(goldTotal)}
+              </div>
+            </div>
+            <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-mono">
+              <span className="text-stone-600">
+                Purchased: <span className="font-bold text-emerald-700">{formatCurrency(goldAdded)}</span>
+              </span>
+              <span className="text-stone-600">
+                Redeemed: <span className="font-bold text-rose-700">{formatCurrency(goldWithdrawn)}</span>
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* SAVINGS ANALYTICS SECTION */}
       <SavingsAnalyticsSection savingsTransactions={savingsTransactions} />
 
@@ -261,7 +353,7 @@ export default function SavingsPage() {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
                 label="Amount"
                 type="number"
@@ -284,12 +376,21 @@ export default function SavingsPage() {
                   required: 'Date is required',
                 })}
               />
+
+              <Select
+                label="Category / Instrument"
+                options={[
+                  { value: 'Mutual Funds', label: 'Mutual Funds' },
+                  { value: 'Gold', label: 'Gold' },
+                ]}
+                {...register('category')}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Description"
-                placeholder="e.g. Monthly emergency fund contribution"
+                placeholder="e.g. Monthly SIP investment or Sovereign Gold Bond purchase"
                 required
                 error={errors.description?.message}
                 {...register('description', {
@@ -336,20 +437,47 @@ export default function SavingsPage() {
         </form>
       </Card>
 
-      {/* SAVINGS TRANSACTIONS TABLE */}
+      {/* SAVINGS TRANSACTIONS TABLE & FILTER TABS */}
       <Card>
-        <CardHeader variant="dark">
-          <CardTitle>Savings Statement History</CardTitle>
-          <Badge variant="muted">{sortedTransactions.length} Records</Badge>
+        <CardHeader variant="dark" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle icon={FiList}>Savings Statement History</CardTitle>
+            <CardDescription className="text-stone-400">
+              Showing {sortedTransactions.length} of {savingsTransactions.length} Records
+            </CardDescription>
+          </div>
+
+          {/* FILTER TABS */}
+          <div className="flex items-center gap-1 bg-stone-800 p-1 rounded-lg border border-stone-700 text-xs font-mono">
+            {['All', 'Mutual Funds', 'Gold'].map((filterName) => {
+              const isActive = activeCategoryFilter === filterName;
+              return (
+                <button
+                  key={filterName}
+                  type="button"
+                  onClick={() => setActiveCategoryFilter(filterName)}
+                  className={`px-3 py-1.5 rounded-md transition-colors ${
+                    isActive
+                      ? 'bg-stone-100 text-stone-900 font-bold shadow'
+                      : 'text-stone-300 hover:text-white hover:bg-stone-700'
+                  }`}
+                >
+                  {filterName}
+                </button>
+              );
+            })}
+          </div>
         </CardHeader>
 
         <CardContent className="p-0">
           {sortedTransactions.length === 0 ? (
             <div className="p-12 text-center">
               <FiTrendingUp className="mx-auto text-4xl text-stone-400 mb-3" />
-              <p className="text-xs font-mono font-bold uppercase tracking-wider text-stone-700">No Savings Records Logged</p>
+              <p className="text-xs font-mono font-bold uppercase tracking-wider text-stone-700">
+                No {activeCategoryFilter !== 'All' ? activeCategoryFilter : ''} Records Found
+              </p>
               <p className="text-xs text-stone-500 font-mono mt-1">
-                Log your first savings deposit or withdrawal above to update your statement.
+                Log your first {activeCategoryFilter !== 'All' ? activeCategoryFilter : 'savings'} deposit or withdrawal above.
               </p>
             </div>
           ) : (
@@ -359,6 +487,7 @@ export default function SavingsPage() {
                   <tr className="bg-stone-900 text-stone-100 text-[11px] font-mono font-bold uppercase tracking-wider select-none border-b-2 border-stone-950">
                     <th className="py-3 px-4 sm:px-6">Date</th>
                     <th className="py-3 px-4">Description</th>
+                    <th className="py-3 px-4">Category</th>
                     <th className="py-3 px-4">Type</th>
                     <th className="py-3 px-4 text-right">Amount</th>
                     <th className="py-3 px-4 sm:px-6 text-center">Actions</th>
@@ -368,6 +497,8 @@ export default function SavingsPage() {
                   {sortedTransactions.map((tx) => {
                     const isDeposit = tx.type === 'deposit';
                     const isEditing = tx.id === editingId;
+                    const cat = tx.category || 'Mutual Funds';
+                    const isGold = cat === 'Gold';
 
                     return (
                       <tr
@@ -381,6 +512,14 @@ export default function SavingsPage() {
                         </td>
                         <td className="py-3 px-4 text-stone-900 font-bold max-w-xs truncate font-sans">
                           {tx.description}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <Badge
+                            variant={isGold ? 'amber' : 'indigo'}
+                            size="sm"
+                          >
+                            {cat}
+                          </Badge>
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <Badge
@@ -445,13 +584,20 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
     sorted.forEach((tx) => {
       const monthKey = tx.date ? tx.date.substring(0, 7) : new Date().toISOString().substring(0, 7);
       if (!monthMap[monthKey]) {
-        monthMap[monthKey] = { added: 0, withdrawn: 0, net: 0 };
+        monthMap[monthKey] = { added: 0, withdrawn: 0, net: 0, mf: 0, gold: 0 };
       }
       const amt = Number(tx.amount) || 0;
-      if (tx.type === 'deposit') {
+      const cat = tx.category || 'Mutual Funds';
+      const isDeposit = tx.type === 'deposit';
+
+      if (isDeposit) {
         monthMap[monthKey].added += amt;
+        if (cat === 'Gold') monthMap[monthKey].gold += amt;
+        else monthMap[monthKey].mf += amt;
       } else if (tx.type === 'withdraw') {
         monthMap[monthKey].withdrawn += amt;
+        if (cat === 'Gold') monthMap[monthKey].gold -= amt;
+        else monthMap[monthKey].mf -= amt;
       }
       monthMap[monthKey].net = monthMap[monthKey].added - monthMap[monthKey].withdrawn;
     });
@@ -487,6 +633,8 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
         Withdrawn: data.withdrawn,
         NetSavings: data.net,
         CumulativeSavings: cumulative,
+        MutualFunds: Math.max(0, data.mf),
+        Gold: Math.max(0, data.gold),
       };
     });
 
@@ -506,7 +654,7 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-stone-900 flex items-center gap-2">
           <FiBarChart2 className="text-stone-900" />
-          Savings Growth Analytics & Trends
+          Savings & Investment Analytics
         </h3>
         <Badge variant="emerald" showDot>
           Verified Audit
@@ -558,7 +706,7 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
                   </span>
                 </div>
                 <p className="text-xs font-mono text-stone-700">
-                  Added: <span className="font-bold text-emerald-800">{formatCurrency(lowestMonth.added, { sign: true })}</span> |
+                  Added: <span className="font-bold text-emerald-800">{formatCurrency(highestMonth.added, { sign: true })}</span> |
                   Withdrawn: <span className="font-bold text-rose-800">{formatCurrency(lowestMonth.withdrawn)}</span>
                 </p>
               </div>
@@ -586,13 +734,13 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
         <AnalyticsBarChart
           data={series}
           xKey="monthLabel"
-          title="Monthly Savings Deposits vs Withdrawals"
-          description="Deposits added vs funds withdrawn each month"
-          badge="Bar Chart"
+          title="Mutual Funds vs Gold Investments"
+          description="Monthly contributions by asset category"
+          badge="Asset Division"
           height={260}
           series={[
-            { key: 'Added', name: 'Deposits Added', color: '#16a34a' },
-            { key: 'Withdrawn', name: 'Withdrawn', color: '#b91c1c' },
+            { key: 'MutualFunds', name: 'Mutual Funds', color: '#4f46e5' },
+            { key: 'Gold', name: 'Gold', color: '#f59e0b' },
           ]}
         />
       </div>

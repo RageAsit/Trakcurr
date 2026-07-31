@@ -38,6 +38,7 @@ const CATEGORY_OPTIONS = [
   'Dine Out',
   'Travel',
   'Entertainment',
+  'Investment',
   'Miscellaneous',
 ];
 

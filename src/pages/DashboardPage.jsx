@@ -53,6 +53,7 @@ const CATEGORIES_LIST = [
   { name: 'Dine Out', icon: FiCoffee },
   { name: 'Travel', icon: FiNavigation },
   { name: 'Entertainment', icon: FiTv },
+  { name: 'Investment', icon: FiTrendingUp },
   { name: 'Miscellaneous', icon: FiBox },
 ];
 

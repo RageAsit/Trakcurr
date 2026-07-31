@@ -33,6 +33,7 @@ export const useSavingsStore = create((set, get) => ({
       description: savingsData.description || 'Savings Contribution',
       amount: Number(savingsData.amount) || 0,
       type: savingsData.type || 'deposit',
+      category: savingsData.category || 'Mutual Funds',
       goalName: savingsData.goalName || 'General Savings',
       date: savingsData.date || new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString(),

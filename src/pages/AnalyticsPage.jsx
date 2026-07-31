@@ -104,6 +104,7 @@ const CATEGORY_OPTIONS = [
   { value: 'Dine Out', label: 'Dine Out' },
   { value: 'Travel', label: 'Travel' },
   { value: 'Entertainment', label: 'Entertainment' },
+  { value: 'Investment', label: 'Investment' },
   { value: 'Miscellaneous', label: 'Miscellaneous' },
 ];
 
@@ -120,6 +121,7 @@ const CATEGORIES_ICONS = {
   'Dine Out': FiCoffee,
   Travel: FiNavigation,
   Entertainment: FiTv,
+  Investment: FiTrendingUp,
   Miscellaneous: FiBox,
 };
 
@@ -129,6 +131,7 @@ const CATEGORY_COLORS = {
   'Dine Out': '#e11d48',
   Travel: '#0284c7',
   Entertainment: '#7c3aed',
+  Investment: '#10b981',
   Miscellaneous: '#64748b',
 };
 

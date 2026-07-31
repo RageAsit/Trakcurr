@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS = {
     'Personal',
     'Income',
     'Savings',
+    'Investment',
   ],
   theme: 'light',
 };
