@@ -278,6 +278,149 @@ export const applyAnalyticsFilters = (transactions = [], savingsTransactions = [
 };
 
 /**
+ * Calculate carry-forward opening balance and closing balance for a given month (YYYY-MM).
+ * @param {Array} transactions 
+ * @param {Array} savingsTransactions 
+ * @param {string} yearMonth - Format 'YYYY-MM'
+ * @returns {Object} Carry forward balance details
+ */
+export const calculateMonthCarryForward = (transactions = [], savingsTransactions = [], yearMonth) => {
+  if (!yearMonth) {
+    return {
+      openingBalance: 0,
+      closingBalance: 0,
+      monthNetBalance: 0,
+      openingCash: 0,
+      closingCash: 0,
+      monthCashNet: 0,
+      openingOnline: 0,
+      closingOnline: 0,
+      monthOnlineNet: 0,
+      openingSavings: 0,
+      closingSavings: 0,
+      monthNetSavings: 0,
+      openingMF: 0,
+      closingMF: 0,
+      openingGold: 0,
+      closingGold: 0,
+    };
+  }
+
+  const startOfMonth = `${yearMonth}-01`;
+
+  let openingBalance = 0;
+  let openingCash = 0;
+  let openingOnline = 0;
+
+  transactions.forEach((tx) => {
+    if (tx.date && tx.date < startOfMonth) {
+      const amt = Number(tx.amount) || 0;
+      const type = (tx.type || '').toLowerCase();
+      const mode = (tx.mode || tx.paymentMode || '').toLowerCase();
+
+      if (type === 'credit') {
+        openingBalance += amt;
+        if (mode === 'cash') openingCash += amt;
+        else if (mode === 'online') openingOnline += amt;
+      } else if (type === 'debit') {
+        openingBalance -= amt;
+        if (mode === 'cash') openingCash -= amt;
+        else if (mode === 'online') openingOnline -= amt;
+      }
+    }
+  });
+
+  let openingSavings = 0;
+  let openingMF = 0;
+  let openingGold = 0;
+
+  savingsTransactions.forEach((tx) => {
+    if (tx.date && tx.date < startOfMonth) {
+      const amt = Number(tx.amount) || 0;
+      const type = (tx.type || '').toLowerCase();
+      const cat = tx.category || 'Mutual Funds';
+      const isDep = type === 'deposit' || type === 'added';
+
+      if (isDep) {
+        openingSavings += amt;
+        if (cat === 'Gold') openingGold += amt;
+        else openingMF += amt;
+      } else {
+        openingSavings -= amt;
+        if (cat === 'Gold') openingGold -= amt;
+        else openingMF -= amt;
+      }
+    }
+  });
+
+  const monthTxs = filterByMonth(transactions, yearMonth);
+  const monthSavings = filterByMonth(savingsTransactions, yearMonth);
+
+  const monthFinancial = calculateIncomeVsExpense(monthTxs);
+  const monthSavingsMov = calculateSavingsMovement(monthSavings);
+
+  let monthCashIncome = 0, monthCashExpense = 0;
+  let monthOnlineIncome = 0, monthOnlineExpense = 0;
+
+  monthTxs.forEach((tx) => {
+    const amt = Number(tx.amount) || 0;
+    const type = (tx.type || '').toLowerCase();
+    const mode = (tx.mode || tx.paymentMode || '').toLowerCase();
+
+    if (type === 'credit') {
+      if (mode === 'cash') monthCashIncome += amt;
+      else if (mode === 'online') monthOnlineIncome += amt;
+    } else if (type === 'debit') {
+      if (mode === 'cash') monthCashExpense += amt;
+      else if (mode === 'online') monthOnlineExpense += amt;
+    }
+  });
+
+  const monthCashNet = monthCashIncome - monthCashExpense;
+  const monthOnlineNet = monthOnlineIncome - monthOnlineExpense;
+
+  let monthMFA = 0, monthMFW = 0, monthGoldA = 0, monthGoldW = 0;
+  monthSavings.forEach((tx) => {
+    const amt = Number(tx.amount) || 0;
+    const type = (tx.type || '').toLowerCase();
+    const cat = tx.category || 'Mutual Funds';
+    if (type === 'deposit' || type === 'added') {
+      if (cat === 'Gold') monthGoldA += amt;
+      else monthMFA += amt;
+    } else {
+      if (cat === 'Gold') monthGoldW += amt;
+      else monthMFW += amt;
+    }
+  });
+
+  const closingBalance = openingBalance + monthFinancial.netBalance;
+  const closingCash = openingCash + monthCashNet;
+  const closingOnline = openingOnline + monthOnlineNet;
+  const closingSavings = openingSavings + monthSavingsMov.netSavings;
+  const closingMF = openingMF + (monthMFA - monthMFW);
+  const closingGold = openingGold + (monthGoldA - monthGoldW);
+
+  return {
+    openingBalance,
+    closingBalance,
+    monthNetBalance: monthFinancial.netBalance,
+    openingCash,
+    closingCash,
+    monthCashNet,
+    openingOnline,
+    closingOnline,
+    monthOnlineNet,
+    openingSavings,
+    closingSavings,
+    monthNetSavings: monthSavingsMov.netSavings,
+    openingMF,
+    closingMF,
+    openingGold,
+    closingGold,
+  };
+};
+
+/**
  * Aggregates transaction & savings data for a specific month (YYYY-MM).
  * @param {Array} transactions 
  * @param {Array} savingsTransactions 
@@ -287,11 +430,16 @@ export const applyAnalyticsFilters = (transactions = [], savingsTransactions = [
 export const getMonthlyAggregation = (transactions = [], savingsTransactions = [], yearMonth) => {
   const filteredTxs = filterByMonth(transactions, yearMonth);
   const filteredSavings = filterByMonth(savingsTransactions, yearMonth);
+  const summary = getSummaryAnalytics(filteredTxs, filteredSavings);
+  const carryForward = calculateMonthCarryForward(transactions, savingsTransactions, yearMonth);
+  summary.carryForward = carryForward;
+
   return {
     period: yearMonth,
-    summary: getSummaryAnalytics(filteredTxs, filteredSavings),
+    summary,
     transactions: filteredTxs,
     savingsTransactions: filteredSavings,
+    carryForward,
   };
 };
 
@@ -324,12 +472,17 @@ export const getLastNMonthsAggregation = (
     const monthTxs = filterByMonth(transactions, monthKey);
     const monthSavings = filterByMonth(savingsTransactions, monthKey);
 
+    const summary = getSummaryAnalytics(monthTxs, monthSavings);
+    const carryForward = calculateMonthCarryForward(transactions, savingsTransactions, monthKey);
+    summary.carryForward = carryForward;
+
     monthlySeries.push({
       monthKey,
       monthLabel,
-      summary: getSummaryAnalytics(monthTxs, monthSavings),
+      summary,
       transactions: monthTxs,
       savingsTransactions: monthSavings,
+      carryForward,
     });
   }
 
@@ -356,12 +509,18 @@ export const getYearMonthlySeries = (transactions = [], savingsTransactions = []
     const monthLabel = d.toLocaleString('default', { month: 'short' });
     const monthTxs = filterByMonth(transactions, monthKey);
     const monthSavings = filterByMonth(savingsTransactions, monthKey);
+
+    const summary = getSummaryAnalytics(monthTxs, monthSavings);
+    const carryForward = calculateMonthCarryForward(transactions, savingsTransactions, monthKey);
+    summary.carryForward = carryForward;
+
     series.push({
       monthKey,
       monthLabel,
-      summary: getSummaryAnalytics(monthTxs, monthSavings),
+      summary,
       transactions: monthTxs,
       savingsTransactions: monthSavings,
+      carryForward,
     });
   }
   return series;

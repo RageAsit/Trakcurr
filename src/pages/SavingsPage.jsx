@@ -612,7 +612,9 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
 
     const series = monthKeys.map((key) => {
       const data = monthMap[key];
+      const opening = cumulative;
       cumulative += data.net;
+      const closing = cumulative;
       const [y, m] = key.split('-').map(Number);
       const dateObj = new Date(y, m - 1, 1);
       const monthLabel = dateObj.toLocaleString('default', { month: 'short', year: 'numeric' });
@@ -629,10 +631,12 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
       return {
         monthKey: key,
         monthLabel,
+        OpeningSavings: opening,
         Added: data.added,
         Withdrawn: data.withdrawn,
         NetSavings: data.net,
-        CumulativeSavings: cumulative,
+        CumulativeSavings: closing,
+        ClosingSavings: closing,
         MutualFunds: Math.max(0, data.mf),
         Gold: Math.max(0, data.gold),
       };
@@ -748,7 +752,7 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
       <Card>
         <CardHeader variant="dark">
           <CardTitle>Month-by-Month Savings Breakdown</CardTitle>
-          <span className="text-xs font-mono text-stone-300">Detailed Statement</span>
+          <span className="text-xs font-mono text-stone-300">Detailed Statement with Carried Forward Balance</span>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -756,10 +760,11 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
               <thead>
                 <tr className="bg-stone-900 text-stone-100 text-[11px] font-bold uppercase tracking-wider select-none border-b-2 border-stone-950">
                   <th className="py-3 px-4 sm:px-6">Month</th>
+                  <th className="py-3 px-4 text-right">Opening (Carried Forward)</th>
                   <th className="py-3 px-4 text-right">Added</th>
                   <th className="py-3 px-4 text-right">Withdrawn</th>
-                  <th className="py-3 px-4 text-right">Net Savings</th>
-                  <th className="py-3 px-4 text-right">Cumulative Balance</th>
+                  <th className="py-3 px-4 text-right">Month Net</th>
+                  <th className="py-3 px-4 text-right">Closing Balance</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-200">
@@ -770,6 +775,9 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
                       <td className="py-3 px-4 sm:px-6 font-bold text-stone-900 whitespace-nowrap font-display uppercase">
                         {item.monthLabel}
                       </td>
+                      <td className="py-3 px-4 text-right font-medium text-stone-600 whitespace-nowrap">
+                        {formatCurrency(item.OpeningSavings)}
+                      </td>
                       <td className="py-3 px-4 text-right font-semibold text-emerald-800 whitespace-nowrap">
                         {item.Added > 0 ? formatCurrency(item.Added, { sign: true }) : '-'}
                       </td>
@@ -777,14 +785,14 @@ function SavingsAnalyticsSection({ savingsTransactions = [] }) {
                         {item.Withdrawn > 0 ? formatCurrency(-item.Withdrawn) : '-'}
                       </td>
                       <td
-                        className={`py-3 px-4 text-right font-extrabold whitespace-nowrap ${
+                        className={`py-3 px-4 text-right font-bold whitespace-nowrap ${
                           isPositive ? 'text-stone-900' : 'text-rose-800'
                         }`}
                       >
                         {item.NetSavings !== 0 ? formatCurrency(item.NetSavings, { sign: true }) : '-'}
                       </td>
                       <td className="py-3 px-4 text-right font-extrabold text-stone-900 whitespace-nowrap">
-                        {formatCurrency(item.CumulativeSavings)}
+                        {formatCurrency(item.ClosingSavings)}
                       </td>
                     </tr>
                   );

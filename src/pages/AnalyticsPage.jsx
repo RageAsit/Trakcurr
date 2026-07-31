@@ -1748,14 +1748,16 @@ const MonthlySummaryGrid = memo(function MonthlySummaryGrid({ data, periodLabel 
           <div className="mt-3 space-y-1">
             <div
               className={`text-2xl font-extrabold tracking-tight leading-none ${
-                netBalance >= 0 ? 'text-stone-900' : 'text-rose-800'
+                (data.closingBalance !== undefined ? data.closingBalance : netBalance) >= 0 ? 'text-stone-900' : 'text-rose-800'
               }`}
             >
-              {formatCurrency(netBalance)}
+              {formatCurrency(data.closingBalance !== undefined ? data.closingBalance : netBalance)}
             </div>
-            <Badge variant={netBalance >= 0 ? 'indigo' : 'rose'} size="sm">
-              {netBalance >= 0 ? 'Surplus' : 'Deficit'}
-            </Badge>
+            <div className="flex items-center gap-1.5 pt-0.5 text-[10px] text-stone-500 font-mono">
+              <span>Op: <strong className="text-stone-800">{formatCurrency(data.openingBalance || 0)}</strong></span>
+              <span>•</span>
+              <span>Net: <strong className={netBalance >= 0 ? 'text-emerald-700' : 'text-rose-700'}>{formatCurrency(netBalance, { sign: true })}</strong></span>
+            </div>
           </div>
         </CardContent>
       </Card>

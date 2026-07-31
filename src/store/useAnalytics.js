@@ -26,10 +26,19 @@ export const normalizeAnalyticsSummary = (summary) => {
     totalExpense: summary.expense || 0,
     expense: summary.expense || 0,
     netBalance: summary.netBalance || 0,
+    openingBalance: summary.carryForward?.openingBalance || 0,
+    closingBalance: summary.carryForward?.closingBalance || summary.netBalance || 0,
+    openingSavings: summary.carryForward?.openingSavings || 0,
+    closingSavings: summary.carryForward?.closingSavings || summary.savingsMovement?.netSavings || 0,
+    openingMF: summary.carryForward?.openingMF || 0,
+    closingMF: summary.carryForward?.closingMF || 0,
+    openingGold: summary.carryForward?.openingGold || 0,
+    closingGold: summary.carryForward?.closingGold || 0,
     categoryBreakdown: summary.categoryBreakdown || { totals: {}, categories: [], totalExpense: 0 },
     paymentModeBreakdown: summary.paymentModeBreakdown || { cashExpense: 0, onlineExpense: 0, totalExpense: 0, cashPercent: 0, onlinePercent: 0 },
     savingsTotals: summary.savingsMovement || { totalAdded: 0, totalWithdrawn: 0, netSavings: 0, count: 0 },
     count: summary.count || 0,
+    carryForward: summary.carryForward || null,
   };
 };
 

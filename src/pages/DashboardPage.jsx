@@ -17,7 +17,9 @@ import {
   FiBox,
 } from 'react-icons/fi';
 import { useTransactionStore } from '../store/useTransactionStore';
+import { useSavingsStore } from '../store/useSavingsStore';
 import { formatCurrency, formatPercent } from '../utils/formatters';
+import { calculateMonthCarryForward } from '../utils/analytics';
 import {
   SectionHeader,
   Card,
@@ -86,6 +88,12 @@ export default function DashboardPage() {
     return transactions.filter((tx) => tx.date && tx.date.startsWith(selectedMonth));
   }, [transactions, selectedMonth]);
 
+  const { savingsTransactions } = useSavingsStore();
+
+  const carryForward = useMemo(() => {
+    return calculateMonthCarryForward(transactions, savingsTransactions, selectedMonth);
+  }, [transactions, savingsTransactions, selectedMonth]);
+
   const metrics = useMemo(() => {
     let income = 0;
     let expense = 0;
@@ -100,11 +108,21 @@ export default function DashboardPage() {
       }
     });
 
-    const netBalance = income - expense;
+    const monthNet = income - expense;
+    const openingBalance = carryForward.openingBalance;
+    const closingBalance = carryForward.closingBalance;
     const count = monthTransactions.length;
 
-    return { income, expense, netBalance, count };
-  }, [monthTransactions]);
+    return {
+      income,
+      expense,
+      monthNet,
+      openingBalance,
+      closingBalance,
+      netBalance: closingBalance,
+      count,
+    };
+  }, [monthTransactions, carryForward]);
 
   const paymentModeMetrics = useMemo(() => {
     let cashExpense = 0;
@@ -136,11 +154,30 @@ export default function DashboardPage() {
     const cashPercent = metrics.expense > 0 ? (cashExpense / totalExpense) * 100 : 0;
     const onlinePercent = metrics.expense > 0 ? (onlineExpense / totalExpense) * 100 : 0;
 
-    const cashBalance = cashIncome - cashExpense;
-    const onlineBalance = onlineIncome - onlineExpense;
+    const openingCashBalance = carryForward.openingCash;
+    const openingOnlineBalance = carryForward.openingOnline;
+    const closingCashBalance = carryForward.closingCash;
+    const closingOnlineBalance = carryForward.closingOnline;
+    const cashMonthNet = cashIncome - cashExpense;
+    const onlineMonthNet = onlineIncome - onlineExpense;
 
-    return { cashExpense, onlineExpense, cashPercent, onlinePercent, cashIncome, onlineIncome, cashBalance, onlineBalance };
-  }, [monthTransactions, metrics.expense]);
+    return {
+      cashExpense,
+      onlineExpense,
+      cashPercent,
+      onlinePercent,
+      cashIncome,
+      onlineIncome,
+      openingCashBalance,
+      openingOnlineBalance,
+      closingCashBalance,
+      closingOnlineBalance,
+      cashBalance: closingCashBalance,
+      onlineBalance: closingOnlineBalance,
+      cashMonthNet,
+      onlineMonthNet,
+    };
+  }, [monthTransactions, metrics.expense, carryForward]);
 
   const categoryMetrics = useMemo(() => {
     const totals = {};
@@ -239,22 +276,27 @@ export default function DashboardPage() {
         <Card className="border-l-4 border-l-stone-900">
           <CardHeader variant="dark">
             <CardTitle icon={FiPieChart} iconColor="text-amber-400">Net Balance</CardTitle>
-            <Badge variant={metrics.netBalance >= 0 ? 'emerald' : 'rose'}>
-              {metrics.netBalance >= 0 ? 'Surplus' : 'Deficit'}
+            <Badge variant={metrics.closingBalance >= 0 ? 'emerald' : 'rose'}>
+              {metrics.closingBalance >= 0 ? 'Closing Surplus' : 'Deficit'}
             </Badge>
           </CardHeader>
           <CardContent className="p-5 space-y-3">
             <div>
               <div
                 className={`text-2xl sm:text-3xl xl:text-2xl 2xl:text-3xl font-mono font-extrabold tracking-tight whitespace-nowrap overflow-hidden text-ellipsis ${
-                  metrics.netBalance >= 0 ? 'text-stone-900' : 'text-rose-800'
+                  metrics.closingBalance >= 0 ? 'text-stone-900' : 'text-rose-800'
                 }`}
               >
-                {formatCurrency(metrics.netBalance)}
+                {formatCurrency(metrics.closingBalance)}
               </div>
-              <span className="inline-block text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-100 text-stone-800 border border-stone-300 mt-1">
-                Net Cashflow
-              </span>
+              <div className="flex items-center gap-2 mt-1 font-mono text-[10px] text-stone-600">
+                <span className="bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                  Opening: <span className="font-bold text-stone-800">{formatCurrency(metrics.openingBalance)}</span>
+                </span>
+                <span className="bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                  Month Net: <span className={`font-bold ${metrics.monthNet >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>{formatCurrency(metrics.monthNet, { sign: true })}</span>
+                </span>
+              </div>
             </div>
 
             {/* Cash & Online Balance Breakdown */}
@@ -271,6 +313,9 @@ export default function DashboardPage() {
                 >
                   {formatCurrency(paymentModeMetrics.cashBalance)}
                 </div>
+                <div className="text-[9px] font-mono text-stone-500 truncate">
+                  Op: {formatCurrency(paymentModeMetrics.openingCashBalance)}
+                </div>
               </div>
               {/* Online Balance */}
               <div className="space-y-0.5">
@@ -283,6 +328,9 @@ export default function DashboardPage() {
                   }`}
                 >
                   {formatCurrency(paymentModeMetrics.onlineBalance)}
+                </div>
+                <div className="text-[9px] font-mono text-stone-500 truncate">
+                  Op: {formatCurrency(paymentModeMetrics.openingOnlineBalance)}
                 </div>
               </div>
             </div>
