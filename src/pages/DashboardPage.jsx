@@ -9,6 +9,7 @@ import {
   FiArrowUpRight,
   FiArrowDownLeft,
   FiArrowRight,
+  FiRepeat,
   FiHome,
   FiShoppingBag,
   FiCoffee,
@@ -311,10 +312,10 @@ export default function DashboardPage() {
                     paymentModeMetrics.cashBalance >= 0 ? 'text-emerald-800' : 'text-rose-800'
                   }`}
                 >
-                  {formatCurrency(paymentModeMetrics.cashBalance)}
+                  {formatCurrency(Math.round(paymentModeMetrics.cashBalance), { decimals: 0 })}
                 </div>
                 <div className="text-[9px] font-mono text-stone-500 truncate">
-                  Op: {formatCurrency(paymentModeMetrics.openingCashBalance)}
+                  Op: {formatCurrency(Math.round(paymentModeMetrics.openingCashBalance), { decimals: 0 })}
                 </div>
               </div>
               {/* Online Balance */}
@@ -466,7 +467,13 @@ export default function DashboardPage() {
           ) : (
             <div className="divide-y divide-stone-200">
               {recentMonthTransactions.map((tx) => {
-                const isCredit = (tx.type || '').toLowerCase() === 'credit';
+                const typeStr = (tx.type || '').toLowerCase();
+                const isCredit = typeStr === 'credit';
+                const isConversion =
+                  typeStr === 'conversion' ||
+                  typeStr.includes('cash to online') ||
+                  typeStr.includes('online to cash');
+
                 return (
                   <div
                     key={tx.id}
@@ -475,27 +482,48 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className={`p-1.5 rounded shrink-0 ${
-                          isCredit
+                          isConversion
+                            ? 'bg-indigo-950 text-indigo-300 border border-indigo-800'
+                            : isCredit
                             ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                             : 'bg-rose-950 text-rose-300 border border-rose-800'
                         }`}
                       >
-                        {isCredit ? <FiArrowDownLeft className="text-sm" /> : <FiArrowUpRight className="text-sm" />}
+                        {isConversion ? (
+                          <FiRepeat className="text-sm" />
+                        ) : isCredit ? (
+                          <FiArrowDownLeft className="text-sm" />
+                        ) : (
+                          <FiArrowUpRight className="text-sm" />
+                        )}
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-stone-900 truncate">{tx.description}</div>
                         <div className="text-[11px] text-stone-500 font-mono mt-0.5 uppercase tracking-wide">
-                          {formatDate(tx.date)} · {tx.category} · {tx.mode}
+                          {formatDate(tx.date)} · {tx.category} ·{' '}
+                          {tx.mode === 'Cash to Online'
+                            ? 'Cash ➔ Online'
+                            : tx.mode === 'Online to Cash'
+                            ? 'Online ➔ Cash'
+                            : tx.mode}
                         </div>
                       </div>
                     </div>
 
                     <div
                       className={`text-sm font-mono font-extrabold shrink-0 text-right ${
-                        isCredit ? 'text-emerald-800' : 'text-rose-800'
+                        isConversion
+                          ? 'text-indigo-900'
+                          : isCredit
+                          ? 'text-emerald-800'
+                          : 'text-rose-800'
                       }`}
                     >
-                      {formatCurrency(isCredit ? Number(tx.amount) : -Number(tx.amount), { sign: true })}
+                      {isConversion
+                        ? `⇄ ${formatCurrency(Number(tx.amount))}`
+                        : formatCurrency(isCredit ? Number(tx.amount) : -Number(tx.amount), {
+                            sign: true,
+                          })}
                     </div>
                   </div>
                 );

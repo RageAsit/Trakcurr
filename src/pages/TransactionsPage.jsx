@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   FiCreditCard,
@@ -7,9 +7,11 @@ import {
   FiSearch,
   FiPlusCircle,
   FiRefreshCw,
+  FiRepeat,
   FiEdit2,
   FiTrash2,
   FiX,
+  FiArrowRight,
 } from 'react-icons/fi';
 import { useTransactionStore } from '../store/useTransactionStore';
 import { formatCurrency, useCurrency } from '../utils/formatters';
@@ -39,6 +41,7 @@ const CATEGORY_OPTIONS = [
   'Travel',
   'Entertainment',
   'Investment',
+  'Conversion',
   'Miscellaneous',
 ];
 
@@ -94,18 +97,27 @@ export default function TransactionsPage() {
   const monthSummary = useMemo(() => {
     let totalDebit = 0;
     let totalCredit = 0;
+    let totalConversions = 0;
 
     monthTransactions.forEach((tx) => {
       const amt = Number(tx.amount) || 0;
       const t = (tx.type || '').toLowerCase();
       if (t === 'debit') totalDebit += amt;
-      if (t === 'credit') totalCredit += amt;
+      else if (t === 'credit') totalCredit += amt;
+      else if (
+        t === 'conversion' ||
+        t.includes('cash to online') ||
+        t.includes('online to cash')
+      ) {
+        totalConversions += 1;
+      }
     });
 
     return {
       totalDebit,
       totalCredit,
       netBalance: totalCredit - totalDebit,
+      totalConversions,
       count: monthTransactions.length,
     };
   }, [monthTransactions]);
@@ -119,10 +131,21 @@ export default function TransactionsPage() {
         if (!descMatch && !catMatch) return false;
       }
       if (filterType) {
-        if ((tx.type || '').toLowerCase() !== filterType.toLowerCase()) return false;
+        const t = (tx.type || '').toLowerCase();
+        if (filterType.toLowerCase() === 'conversion') {
+          if (
+            t !== 'conversion' &&
+            !t.includes('cash to online') &&
+            !t.includes('online to cash')
+          )
+            return false;
+        } else {
+          if (t !== filterType.toLowerCase()) return false;
+        }
       }
       if (filterMode) {
-        if ((tx.mode || '').toLowerCase() !== filterMode.toLowerCase()) return false;
+        const m = (tx.mode || '').toLowerCase();
+        if (m !== filterMode.toLowerCase()) return false;
       }
       if (filterCategory) {
         if ((tx.category || '').toLowerCase() !== filterCategory.toLowerCase()) return false;
@@ -166,10 +189,35 @@ export default function TransactionsPage() {
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: defaultFormValues,
   });
+
+  const selectedType = watch('type');
+
+  // Automatically sync mode & category when type switches to Conversion
+  useEffect(() => {
+    if (selectedType === 'Conversion') {
+      setValue('category', 'Conversion');
+      const currentMode = watch('mode');
+      if (currentMode !== 'Cash to Online' && currentMode !== 'Online to Cash') {
+        setValue('mode', 'Cash to Online');
+      }
+    }
+  }, [selectedType, setValue, watch]);
+
+  const handleQuickConversionMode = (direction = 'Cash to Online') => {
+    setEditingId(null);
+    setValue('amount', '');
+    setValue('date', todayStr);
+    setValue('description', direction === 'Cash to Online' ? 'Cash deposit to Online account' : 'ATM Cash withdrawal');
+    setValue('category', 'Conversion');
+    setValue('type', 'Conversion');
+    setValue('mode', direction);
+    window.scrollTo({ top: 300, behavior: 'smooth' });
+  };
 
   const onSubmit = (data) => {
     if (editingId) {
@@ -212,7 +260,11 @@ export default function TransactionsPage() {
         setSelectedMonth(data.date.substring(0, 7));
       }
 
-      setToastMessage(`New ${data.type.toLowerCase()} entry added.`);
+      setToastMessage(
+        data.type === 'Conversion'
+          ? `Conversion logged: ${data.mode}`
+          : `New ${data.type.toLowerCase()} entry added.`
+      );
       setShowToast(true);
       reset({
         ...defaultFormValues,
@@ -276,28 +328,59 @@ export default function TransactionsPage() {
         period={selectedMonthLabel}
       />
 
-      {/* Period Selector */}
-      <Card>
-        <CardHeader variant="dark">
-          <CardTitle icon={FiCalendar} iconColor="text-amber-400">Statement Period</CardTitle>
-          <Badge variant="muted">{selectedMonthLabel}</Badge>
-        </CardHeader>
-        <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-widest block">
-              Active Month
-            </span>
-            <h2 className="text-xl font-extrabold text-stone-900 uppercase tracking-wider font-display mt-0.5">{selectedMonthLabel}</h2>
-          </div>
+      {/* Period Selector & Conversion Shortcuts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader variant="dark">
+            <CardTitle icon={FiCalendar} iconColor="text-amber-400">Statement Period</CardTitle>
+            <Badge variant="muted">{selectedMonthLabel}</Badge>
+          </CardHeader>
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-widest block">
+                Active Month
+              </span>
+              <h2 className="text-xl font-extrabold text-stone-900 uppercase tracking-wider font-display mt-0.5">{selectedMonthLabel}</h2>
+            </div>
 
-          <Select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            options={monthOptions}
-            className="min-w-[220px]"
-          />
-        </CardContent>
-      </Card>
+            <Select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              options={monthOptions}
+              className="min-w-[220px]"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Quick Fund Conversion Action Box */}
+        <Card className="bg-[#18181b] border-stone-800 text-stone-100 flex flex-col justify-between">
+          <CardHeader className="border-stone-800 py-3">
+            <CardTitle icon={FiRepeat} iconColor="text-indigo-400">Cash ⇄ Online Convert</CardTitle>
+            <Badge variant="violet" showDot>Non-Income</Badge>
+          </CardHeader>
+          <CardContent className="p-3 space-y-2">
+            <p className="text-[11px] font-mono text-stone-400 leading-tight">
+              Transfer funds between Cash & Online balances without skewing income totals.
+            </p>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => handleQuickConversionMode('Cash to Online')}
+                className="px-2.5 py-1.5 rounded bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700 text-[11px] font-mono font-bold text-indigo-100 transition-all text-center flex items-center justify-center gap-1"
+              >
+                Cash ➔ Online
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickConversionMode('Online to Cash')}
+                className="px-2.5 py-1.5 rounded bg-amber-900/60 hover:bg-amber-800 border border-amber-700 text-[11px] font-mono font-bold text-amber-100 transition-all text-center flex items-center justify-center gap-1"
+              >
+                Online ➔ Cash
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Entry Form */}
       <Card>
@@ -307,6 +390,8 @@ export default function TransactionsPage() {
           </CardTitle>
           {editingId ? (
             <Badge variant="amber" showDot>Edit Mode</Badge>
+          ) : selectedType === 'Conversion' ? (
+            <Badge variant="violet" showDot>Fund Conversion Mode</Badge>
           ) : (
             <Badge variant="muted">New Entry</Badge>
           )}
@@ -343,7 +428,11 @@ export default function TransactionsPage() {
               <div className="md:col-span-3">
                 <Input
                   label="Description"
-                  placeholder="e.g. Office supplies & equipment restock"
+                  placeholder={
+                    selectedType === 'Conversion'
+                      ? 'e.g. Bank cash deposit / ATM withdrawal'
+                      : 'e.g. Office supplies & equipment restock'
+                  }
                   required
                   error={errors.description?.message}
                   {...register('description', {
@@ -363,16 +452,24 @@ export default function TransactionsPage() {
                 options={[
                   { value: 'Debit', label: 'Debit (Expense)' },
                   { value: 'Credit', label: 'Credit (Income)' },
+                  { value: 'Conversion', label: 'Conversion (Cash ⇄ Online)' },
                 ]}
                 {...register('type')}
               />
 
               <Select
                 label="Mode"
-                options={[
-                  { value: 'Online', label: 'Online' },
-                  { value: 'Cash', label: 'Cash' },
-                ]}
+                options={
+                  selectedType === 'Conversion'
+                    ? [
+                        { value: 'Cash to Online', label: 'Cash ➔ Online (Deposit)' },
+                        { value: 'Online to Cash', label: 'Online ➔ Cash (Withdrawal)' },
+                      ]
+                    : [
+                        { value: 'Online', label: 'Online' },
+                        { value: 'Cash', label: 'Cash' },
+                      ]
+                }
                 {...register('mode')}
               />
             </div>
@@ -399,10 +496,10 @@ export default function TransactionsPage() {
                 </SecondaryButton>
                 <PrimaryButton
                   type="submit"
-                  leftIcon={FiPlusCircle}
+                  leftIcon={selectedType === 'Conversion' ? FiRepeat : FiPlusCircle}
                   isLoading={isSubmitting}
                 >
-                  Save Entry
+                  {selectedType === 'Conversion' ? 'Save Conversion' : 'Save Entry'}
                 </PrimaryButton>
               </>
             )}
@@ -451,6 +548,7 @@ export default function TransactionsPage() {
               <option value="">All Types</option>
               <option value="Debit">Debit</option>
               <option value="Credit">Credit</option>
+              <option value="Conversion">Conversion</option>
             </Select>
 
             <Select
@@ -462,6 +560,8 @@ export default function TransactionsPage() {
               <option value="">All Modes</option>
               <option value="Cash">Cash</option>
               <option value="Online">Online</option>
+              <option value="Cash to Online">Cash to Online</option>
+              <option value="Online to Cash">Online to Cash</option>
             </Select>
 
             <Select
@@ -493,6 +593,14 @@ export default function TransactionsPage() {
             <span className="text-emerald-400 font-bold uppercase">
               Credits: {formatCurrency(monthSummary.totalCredit, { sign: true })}
             </span>
+            {monthSummary.totalConversions > 0 && (
+              <>
+                <span className="text-stone-600">|</span>
+                <span className="text-indigo-300 font-bold uppercase">
+                  Conversions: {monthSummary.totalConversions}
+                </span>
+              </>
+            )}
           </div>
         </CardHeader>
 
@@ -522,7 +630,12 @@ export default function TransactionsPage() {
                 </thead>
                 <tbody className="text-xs font-mono">
                   {sortedTransactions.map((tx, idx) => {
-                    const isDebit = tx.type === 'Debit';
+                    const typeStr = (tx.type || '').toLowerCase();
+                    const isDebit = typeStr === 'debit';
+                    const isConversion =
+                      typeStr === 'conversion' ||
+                      typeStr.includes('cash to online') ||
+                      typeStr.includes('online to cash');
                     const isEditing = tx.id === editingId;
                     const voucherId = `#GL-${String(sortedTransactions.length - idx).padStart(3, '0')}`;
 
@@ -530,7 +643,13 @@ export default function TransactionsPage() {
                       <tr
                         key={tx.id}
                         className={`border-b border-stone-200 transition-colors hover:bg-[#fcfbf9] ${
-                          isEditing ? 'bg-amber-100/60 font-semibold' : idx % 2 === 1 ? 'bg-[#fdfcfa]' : ''
+                          isEditing
+                            ? 'bg-amber-100/60 font-semibold'
+                            : isConversion
+                            ? 'bg-indigo-50/20'
+                            : idx % 2 === 1
+                            ? 'bg-[#fdfcfa]'
+                            : ''
                         }`}
                       >
                         <td className="py-3 px-4 sm:px-5 text-stone-500 font-bold whitespace-nowrap text-[11px]">
@@ -546,19 +665,35 @@ export default function TransactionsPage() {
                           {tx.category}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
-                          <Badge variant={isDebit ? 'rose' : 'emerald'} size="sm" showDot>
+                          <Badge
+                            variant={isConversion ? 'violet' : isDebit ? 'rose' : 'emerald'}
+                            size="sm"
+                            showDot
+                          >
                             {tx.type}
                           </Badge>
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap text-stone-600 uppercase font-bold text-[11px]">
-                          {tx.mode}
+                          {tx.mode === 'Cash to Online'
+                            ? 'Cash ➔ Online'
+                            : tx.mode === 'Online to Cash'
+                            ? 'Online ➔ Cash'
+                            : tx.mode}
                         </td>
                         <td
                           className={`py-3 px-4 text-right font-extrabold whitespace-nowrap text-sm ${
-                            isDebit ? 'text-rose-800' : 'text-emerald-800'
+                            isConversion
+                              ? 'text-indigo-900'
+                              : isDebit
+                              ? 'text-rose-800'
+                              : 'text-emerald-800'
                           }`}
                         >
-                          {formatCurrency(isDebit ? -Number(tx.amount) : Number(tx.amount), { sign: true })}
+                          {isConversion
+                            ? `⇄ ${formatCurrency(Number(tx.amount))}`
+                            : formatCurrency(isDebit ? -Number(tx.amount) : Number(tx.amount), {
+                                sign: true,
+                              })}
                         </td>
                         <td className="py-3 px-4 sm:px-5 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-1">

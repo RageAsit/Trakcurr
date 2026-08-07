@@ -326,6 +326,28 @@ export const calculateMonthCarryForward = (transactions = [], savingsTransaction
         openingBalance -= amt;
         if (mode === 'cash') openingCash -= amt;
         else if (mode === 'online') openingOnline -= amt;
+      } else if (
+        type === 'conversion' ||
+        mode.includes('cash to online') ||
+        mode.includes('online to cash') ||
+        type.includes('cash to online') ||
+        type.includes('online to cash')
+      ) {
+        if (
+          mode.includes('cash to online') ||
+          type.includes('cash to online') ||
+          mode.includes('cash -> online')
+        ) {
+          openingCash -= amt;
+          openingOnline += amt;
+        } else if (
+          mode.includes('online to cash') ||
+          type.includes('online to cash') ||
+          mode.includes('online -> cash')
+        ) {
+          openingOnline -= amt;
+          openingCash += amt;
+        }
       }
     }
   });
@@ -359,8 +381,8 @@ export const calculateMonthCarryForward = (transactions = [], savingsTransaction
   const monthFinancial = calculateIncomeVsExpense(monthTxs);
   const monthSavingsMov = calculateSavingsMovement(monthSavings);
 
-  let monthCashIncome = 0, monthCashExpense = 0;
-  let monthOnlineIncome = 0, monthOnlineExpense = 0;
+  let monthCashIncome = 0, monthCashExpense = 0, monthCashConversions = 0;
+  let monthOnlineIncome = 0, monthOnlineExpense = 0, monthOnlineConversions = 0;
 
   monthTxs.forEach((tx) => {
     const amt = Number(tx.amount) || 0;
@@ -373,11 +395,33 @@ export const calculateMonthCarryForward = (transactions = [], savingsTransaction
     } else if (type === 'debit') {
       if (mode === 'cash') monthCashExpense += amt;
       else if (mode === 'online') monthOnlineExpense += amt;
+    } else if (
+      type === 'conversion' ||
+      mode.includes('cash to online') ||
+      mode.includes('online to cash') ||
+      type.includes('cash to online') ||
+      type.includes('online to cash')
+    ) {
+      if (
+        mode.includes('cash to online') ||
+        type.includes('cash to online') ||
+        mode.includes('cash -> online')
+      ) {
+        monthCashConversions -= amt;
+        monthOnlineConversions += amt;
+      } else if (
+        mode.includes('online to cash') ||
+        type.includes('online to cash') ||
+        mode.includes('online -> cash')
+      ) {
+        monthOnlineConversions -= amt;
+        monthCashConversions += amt;
+      }
     }
   });
 
-  const monthCashNet = monthCashIncome - monthCashExpense;
-  const monthOnlineNet = monthOnlineIncome - monthOnlineExpense;
+  const monthCashNet = monthCashIncome - monthCashExpense + monthCashConversions;
+  const monthOnlineNet = monthOnlineIncome - monthOnlineExpense + monthOnlineConversions;
 
   let monthMFA = 0, monthMFW = 0, monthGoldA = 0, monthGoldW = 0;
   monthSavings.forEach((tx) => {
