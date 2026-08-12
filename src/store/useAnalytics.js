@@ -8,6 +8,7 @@ import {
   getYearMonthlySeries,
   getSummaryAnalytics,
   filterByYear,
+  filterByDateRange,
   getPreviousMonthKey,
   getSameMonthLastYearKey,
   compareSummaries,
@@ -53,6 +54,23 @@ export const selectMonthSummary = (transactions = [], savingsTransactions = [], 
     ...normalizeAnalyticsSummary(agg.summary),
     transactions: agg.transactions,
     savingsTransactions: agg.savingsTransactions,
+  };
+};
+
+/**
+ * Pure Selector: Selected Day Summary (YYYY-MM-DD)
+ */
+export const selectDaySummary = (transactions = [], savingsTransactions = [], dateStr) => {
+  const targetDate = dateStr || new Date().toISOString().substring(0, 10);
+  const dayTxs = filterByDateRange(transactions, targetDate, targetDate);
+  const daySavings = filterByDateRange(savingsTransactions, targetDate, targetDate);
+  const summary = getSummaryAnalytics(dayTxs, daySavings);
+
+  return {
+    period: targetDate,
+    ...normalizeAnalyticsSummary(summary),
+    transactions: dayTxs,
+    savingsTransactions: daySavings,
   };
 };
 
@@ -232,7 +250,7 @@ export const useYearlyComparison = (targetYear, baselineYear) => {
  * Custom React Hook: Returns memoized derived analytics for any timeframe with filters.
  */
 export const useAnalytics = (options = {}) => {
-  const { timeframe = 'month', selectedMonth, selectedYear, refDate, filters = {} } = options;
+  const { timeframe = 'month', selectedMonth, selectedYear, selectedDate, refDate, filters = {} } = options;
   const transactions = useTransactionStore((state) => state.transactions);
   const savingsTransactions = useSavingsStore((state) => state.savingsTransactions);
 
@@ -246,6 +264,9 @@ export const useAnalytics = (options = {}) => {
     );
 
     switch (timeframe) {
+      case 'day':
+      case 'daily':
+        return selectDaySummary(filteredTransactions, filteredSavingsTransactions, selectedDate);
       case '6months':
       case 'last6Months':
         return selectLast6MonthsSummary(filteredTransactions, filteredSavingsTransactions, refDate);
@@ -260,5 +281,5 @@ export const useAnalytics = (options = {}) => {
       default:
         return selectMonthSummary(filteredTransactions, filteredSavingsTransactions, selectedMonth || filters.month);
     }
-  }, [transactions, savingsTransactions, timeframe, selectedMonth, selectedYear, refDate, filtersKey]);
+  }, [transactions, savingsTransactions, timeframe, selectedMonth, selectedYear, selectedDate, refDate, filtersKey]);
 };

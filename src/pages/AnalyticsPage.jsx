@@ -32,6 +32,7 @@ import {
   FiX,
   FiRotateCcw,
   FiRefreshCw,
+  FiSun,
 } from 'react-icons/fi';
 import { useAnalytics, useMonthlyComparison, useYearlyComparison } from '../store/useAnalytics';
 import { generateAutoInsights } from '../utils/analytics';
@@ -146,6 +147,7 @@ const INSIGHT_ICONS = {
 };
 
 const TAB_OPTIONS = [
+  { id: 'day', label: 'Day-Wise', icon: FiSun },
   { id: 'month', label: 'Monthly Statement', icon: FiCalendar },
   { id: '6months', label: '6-Month Audit', icon: FiClock },
   { id: '12months', label: '12-Month Performance', icon: FiBarChart2 },
@@ -171,6 +173,7 @@ export default function AnalyticsPage() {
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonthValue);
   const [selectedYear, setSelectedYear] = useState(currentYearValue);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().substring(0, 10));
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
@@ -193,6 +196,7 @@ export default function AnalyticsPage() {
     timeframe: activeTab,
     selectedMonth,
     selectedYear,
+    selectedDate,
     filters,
   });
 
@@ -216,7 +220,7 @@ export default function AnalyticsPage() {
 
       {/* BINDER INDEX TAB NAVIGATION BAR */}
       <div className="bg-[#111111] p-1.5 rounded-xl border border-stone-800 shadow-md">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 font-mono">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 font-mono">
           {TAB_OPTIONS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -247,7 +251,18 @@ export default function AnalyticsPage() {
       ) : (
         <>
           {/* AUTO INSIGHTS PANEL */}
-          <AutoInsightsPanel analyticsData={analyticsData} />
+          {activeTab !== 'day' && <AutoInsightsPanel analyticsData={analyticsData} />}
+
+          {/* TAB CONTENT AREA 0: DAY-WISE */}
+          {activeTab === 'day' && (
+            <div className="space-y-8 animate-page-enter">
+              <DailySpendDashboard
+                analyticsData={analyticsData}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+              />
+            </div>
+          )}
 
           {/* TAB CONTENT AREA 1: MONTHLY */}
           {activeTab === 'month' && (
@@ -2143,6 +2158,466 @@ const BreakdownSection = memo(function BreakdownSection({ data, periodLabel }) {
                 </div>
               );
             })
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+});
+
+/* ==================================================================== */
+/* COMPONENT: Daily Spend Dashboard (MEMOIZED)                         */
+/* ==================================================================== */
+const DailySpendDashboard = memo(function DailySpendDashboard({
+  analyticsData,
+  selectedDate,
+  setSelectedDate,
+}) {
+  const { symbol: currencySymbol } = useCurrency();
+
+  const dateLabel = useMemo(() => {
+    if (!selectedDate) return '';
+    const d = new Date(selectedDate + 'T00:00:00');
+    return d.toLocaleDateString('en-IN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }, [selectedDate]);
+
+  const {
+    totalIncome = 0,
+    totalExpense = 0,
+    netBalance = 0,
+    categoryBreakdown,
+    paymentModeBreakdown,
+    transactions = [],
+  } = analyticsData;
+
+  const categoriesList = categoryBreakdown?.categories || [];
+
+  const categoryPieData = useMemo(() => {
+    return categoriesList
+      .filter((c) => c.spent > 0)
+      .map((c) => ({
+        name: c.name,
+        value: c.spent,
+        fill: CATEGORY_COLORS[c.name] || '#64748b',
+      }));
+  }, [categoriesList]);
+
+  const debitTransactions = useMemo(() => {
+    return transactions.filter(
+      (tx) => (tx.type || '').toLowerCase() === 'debit'
+    );
+  }, [transactions]);
+
+  const creditTransactions = useMemo(() => {
+    return transactions.filter(
+      (tx) => (tx.type || '').toLowerCase() === 'credit'
+    );
+  }, [transactions]);
+
+  const isToday = selectedDate === new Date().toISOString().substring(0, 10);
+
+  return (
+    <div className="space-y-8">
+      {/* Date Picker Header */}
+      <Card>
+        <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-300 text-amber-900 shrink-0">
+              <FiSun className="text-xl" />
+            </div>
+            <div>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-500">
+                Day-Wise Statement
+              </span>
+              <h2 className="text-lg sm:text-xl font-extrabold text-stone-900 tracking-wider font-display">
+                {dateLabel}
+              </h2>
+              {isToday && (
+                <Badge variant="emerald" size="sm" showDot>
+                  Today
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <DatePicker
+              label="Select Date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="min-w-[200px]"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Summary Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+        <Card>
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                Total Spent
+              </span>
+              <div className="p-1.5 rounded-md bg-rose-50 border border-rose-200 text-rose-800">
+                <FiTrendingDown className="text-sm" />
+              </div>
+            </div>
+            <div className="mt-3 space-y-1">
+              <div className="text-2xl font-extrabold text-stone-900 tracking-tight leading-none">
+                {formatCurrency(totalExpense)}
+              </div>
+              <Badge variant="rose" size="sm">
+                Debits on this day
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                Income Received
+              </span>
+              <div className="p-1.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800">
+                <FiTrendingUp className="text-sm" />
+              </div>
+            </div>
+            <div className="mt-3 space-y-1">
+              <div className="text-2xl font-extrabold text-emerald-800 tracking-tight leading-none">
+                {formatCurrency(totalIncome)}
+              </div>
+              <Badge variant="emerald" size="sm">
+                Credits on this day
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                Net Balance
+              </span>
+              <div className="p-1.5 rounded-md bg-stone-100 border border-stone-300 text-stone-900 font-mono font-extrabold text-sm flex items-center justify-center w-7 h-7">
+                {currencySymbol}
+              </div>
+            </div>
+            <div className="mt-3 space-y-1">
+              <div
+                className={`text-2xl font-extrabold tracking-tight leading-none ${
+                  netBalance >= 0 ? 'text-stone-900' : 'text-rose-800'
+                }`}
+              >
+                {formatCurrency(netBalance, { sign: true })}
+              </div>
+              <span className="text-[10px] font-mono text-stone-500">
+                Income − Expense
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                Transactions
+              </span>
+              <div className="p-1.5 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-800">
+                <FiActivity className="text-sm" />
+              </div>
+            </div>
+            <div className="mt-3 space-y-1">
+              <div className="text-2xl font-extrabold text-stone-900 tracking-tight leading-none">
+                {transactions.length}
+              </div>
+              <span className="text-[10px] font-mono text-stone-500">
+                {debitTransactions.length} debits • {creditTransactions.length} credits
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Category Breakdown + Donut Chart — Unified Compact Layout */}
+      {totalExpense > 0 && (
+        <Card>
+          <CardHeader border>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle className="font-display uppercase tracking-wider font-extrabold">
+                  Spending Overview
+                </CardTitle>
+                <CardDescription className="font-mono">
+                  Category, distribution & payment mode for {dateLabel}
+                </CardDescription>
+              </div>
+              <Badge variant="indigo">
+                {formatCurrency(totalExpense)} Total Spent
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left: Categories + Payment Mode + Day Snapshot */}
+              <div className="space-y-5">
+                {/* Category bars */}
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-500 flex items-center gap-1.5">
+                    <FiPieChart className="text-xs" />
+                    Category Breakdown
+                  </h4>
+                  {categoriesList.map((cat) => {
+                    const Icon = CATEGORIES_ICONS[cat.name] || FiBox;
+                    return (
+                      <div key={cat.name} className="space-y-2 font-mono">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className="p-1.5 rounded-md border shrink-0"
+                              style={{
+                                backgroundColor: (CATEGORY_COLORS[cat.name] || '#64748b') + '15',
+                                borderColor: (CATEGORY_COLORS[cat.name] || '#64748b') + '40',
+                                color: CATEGORY_COLORS[cat.name] || '#64748b',
+                              }}
+                            >
+                              <Icon className="text-xs" />
+                            </div>
+                            <span className="text-xs font-bold text-stone-800 truncate font-sans">
+                              {cat.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2.5 shrink-0">
+                            <span className="text-xs font-extrabold text-stone-900">
+                              {formatCurrency(cat.spent)}
+                            </span>
+                            <span
+                              className="text-[10px] font-bold px-2 py-0.5 rounded-md border"
+                              style={{
+                                backgroundColor: (CATEGORY_COLORS[cat.name] || '#64748b') + '15',
+                                borderColor: (CATEGORY_COLORS[cat.name] || '#64748b') + '30',
+                                color: CATEGORY_COLORS[cat.name] || '#64748b',
+                              }}
+                            >
+                              {formatPercent(cat.percent)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 w-full bg-stone-100 rounded-full overflow-hidden border border-stone-200">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.min(cat.percent, 100)}%`,
+                              backgroundColor: CATEGORY_COLORS[cat.name] || '#64748b',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Payment Mode inline */}
+                <div className="border-t border-stone-200 pt-4 space-y-3">
+                  <h4 className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-500 flex items-center gap-1.5">
+                    <FiCreditCard className="text-xs" />
+                    Payment Mode
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-700">
+                        Cash
+                      </span>
+                      <div className="text-base font-mono font-extrabold text-stone-900">
+                        {formatCurrency(paymentModeBreakdown?.cashExpense)}
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-amber-800">
+                        {formatPercent(paymentModeBreakdown?.cashPercent)}
+                      </span>
+                    </div>
+                    <div className="bg-sky-50 border border-sky-200 rounded-lg p-3 space-y-1">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-sky-700">
+                        Online
+                      </span>
+                      <div className="text-base font-mono font-extrabold text-stone-900">
+                        {formatCurrency(paymentModeBreakdown?.onlineExpense)}
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-sky-800">
+                        {formatPercent(paymentModeBreakdown?.onlinePercent)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Day Quick Stats */}
+                <div className="border-t border-stone-200 pt-4 space-y-2.5">
+                  <h4 className="text-[10px] font-mono font-bold uppercase tracking-widest text-stone-500 flex items-center gap-1.5">
+                    <FiZap className="text-xs" />
+                    Day Snapshot
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
+                    <div className="bg-[#fbf9f4] border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
+                      <span className="text-stone-500 font-bold">Avg per Txn</span>
+                      <span className="font-extrabold text-stone-900">
+                        {debitTransactions.length > 0
+                          ? formatCurrency(totalExpense / debitTransactions.length)
+                          : '-'}
+                      </span>
+                    </div>
+                    <div className="bg-[#fbf9f4] border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
+                      <span className="text-stone-500 font-bold">Largest Debit</span>
+                      <span className="font-extrabold text-stone-900">
+                        {debitTransactions.length > 0
+                          ? formatCurrency(Math.max(...debitTransactions.map(tx => Number(tx.amount) || 0)))
+                          : '-'}
+                      </span>
+                    </div>
+                    {debitTransactions.length > 1 && (
+                      <div className="bg-[#fbf9f4] border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
+                        <span className="text-stone-500 font-bold">Smallest Debit</span>
+                        <span className="font-extrabold text-stone-900">
+                          {formatCurrency(Math.min(...debitTransactions.map(tx => Number(tx.amount) || 0)))}
+                        </span>
+                      </div>
+                    )}
+                    <div className="bg-[#fbf9f4] border border-stone-200 rounded-lg p-2.5 flex items-center justify-between">
+                      <span className="text-stone-500 font-bold">Categories</span>
+                      <span className="font-extrabold text-stone-900">{categoriesList.length}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Donut Chart */}
+              <div className="flex items-center justify-center">
+                <div className="w-full">
+                  <AnalyticsDonutChart
+                    data={categoryPieData}
+                    title="Spend Distribution"
+                    description={dateLabel}
+                    badge="Donut"
+                    height={280}
+                    nameKey="name"
+                    valueKey="value"
+                    colorKey="fill"
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Individual Transaction Ledger */}
+      <Card>
+        <CardHeader border>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="font-display uppercase tracking-wider font-extrabold">
+                Transaction Ledger
+              </CardTitle>
+              <CardDescription className="font-mono">
+                All transactions recorded on {dateLabel}
+              </CardDescription>
+            </div>
+            <Badge variant="muted">
+              {transactions.length} {transactions.length === 1 ? 'Entry' : 'Entries'}
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          {transactions.length === 0 ? (
+            <div className="p-10 text-center space-y-2">
+              <div className="p-3 rounded-lg bg-stone-100 border border-stone-300 text-stone-500 inline-block mb-2">
+                <FiCalendar className="text-xl" />
+              </div>
+              <p className="text-xs font-mono font-bold text-stone-600 uppercase tracking-wider">
+                No transactions recorded on this date
+              </p>
+              <p className="text-[11px] text-stone-500 font-mono">
+                Select a different date from the calendar above
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse font-mono text-xs">
+                <thead>
+                  <tr className="border-b-2 border-stone-900 bg-stone-900 text-stone-100 text-[11px] font-bold uppercase tracking-wider select-none">
+                    <th className="py-3 px-4 sm:px-6">#</th>
+                    <th className="py-3 px-4">Description</th>
+                    <th className="py-3 px-4">Category</th>
+                    <th className="py-3 px-4">Mode</th>
+                    <th className="py-3 px-4 text-right">Amount</th>
+                    <th className="py-3 px-4 text-center">Type</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#eeebe3]">
+                  {transactions.map((tx, idx) => {
+                    const type = (tx.type || '').toLowerCase();
+                    const isDebit = type === 'debit';
+                    const Icon = CATEGORIES_ICONS[tx.category] || FiBox;
+
+                    return (
+                      <tr key={tx.id || idx} className="transition-colors hover:bg-[#fcfbf9]">
+                        <td className="py-3 px-4 sm:px-6 font-bold text-stone-400 whitespace-nowrap">
+                          {idx + 1}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-stone-900 whitespace-nowrap max-w-[200px] truncate">
+                          {tx.description || '—'}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <Icon className="text-xs text-stone-500" />
+                            <span className="text-stone-700">{tx.category || 'N/A'}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="text-stone-600 capitalize">{tx.mode || tx.paymentMode || '—'}</span>
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-right font-extrabold whitespace-nowrap ${
+                            isDebit ? 'text-rose-800' : 'text-emerald-800'
+                          }`}
+                        >
+                          {isDebit ? '-' : '+'}{formatCurrency(tx.amount)}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <Badge variant={isDebit ? 'rose' : 'emerald'} size="sm">
+                            {isDebit ? 'Debit' : 'Credit'}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                {/* Totals Footer Row */}
+                <tfoot>
+                  <tr className="border-t-2 border-stone-900 bg-stone-50">
+                    <td colSpan="4" className="py-3 px-4 sm:px-6 font-extrabold text-stone-900 uppercase tracking-wider text-[11px]">
+                      Day Total
+                    </td>
+                    <td className="py-3 px-4 text-right font-extrabold text-stone-900 whitespace-nowrap">
+                      {formatCurrency(totalExpense)} spent
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <Badge variant="indigo" size="sm">
+                        {debitTransactions.length} debits
+                      </Badge>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>
