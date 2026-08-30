@@ -24,18 +24,18 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-[#111111] text-stone-100 border-r border-stone-800 shrink-0 h-screen overflow-y-auto select-none justify-between z-30 shadow-xl">
+    <aside className="hidden md:flex flex-col w-64 bg-[#111111] text-stone-100 border-r border-black shrink-0 h-screen overflow-hidden select-none justify-between z-30 shadow-[6px_0_0_rgba(0,0,0,0.08)]">
       {/* Brand */}
-      <div className="px-5 pt-6 pb-5 border-b border-stone-800/80 flex items-center gap-3.5 group cursor-default">
-        <div className="p-2 rounded-xl bg-stone-900 border border-stone-800/90 shadow-sm text-amber-400 group-hover:border-amber-500/40 group-hover:bg-stone-850 transition-all duration-300">
-          <BrandLogo className="w-6 h-6 text-amber-400 group-hover:scale-105 transition-transform" glow />
+      <div className="px-5 pt-6 pb-5 border-b border-stone-800 flex items-center gap-3.5 group cursor-default shrink-0">
+        <div className="p-2 rounded-sm bg-white border border-white shadow-sm text-black">
+          <BrandLogo className="w-6 h-6 text-black" />
         </div>
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0">
           <div className="flex items-center gap-1.5">
-            <h1 className="font-extrabold text-base tracking-widest text-white uppercase font-display leading-none">
+            <h1 className="font-extrabold text-base tracking-widest text-white uppercase font-display leading-none truncate">
               {APP_NAME}
             </h1>
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 bg-amber-400 shrink-0" />
           </div>
           <p className="text-[9px] text-stone-400 font-mono mt-1 tracking-widest uppercase font-semibold">
             Personal Ledger
@@ -43,8 +43,8 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      {/* Navigation — fixed inside the sidebar; no independent scrolling */}
+      <nav className="flex-1 px-3 py-5 space-y-1 overflow-hidden">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
@@ -53,21 +53,17 @@ export default function Sidebar() {
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-md text-[13px] transition-all duration-150 group ${
+                `flex items-center gap-3 px-3 py-3 text-[12px] transition-all duration-150 group border-l-2 ${
                   isActive
-                    ? 'bg-white/10 text-white font-semibold'
-                    : 'text-stone-400 hover:text-stone-200 hover:bg-white/5'
+                    ? 'bg-white text-black border-white font-extrabold'
+                    : 'text-stone-400 border-transparent hover:text-white hover:bg-white/10'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon
-                    className={`text-sm shrink-0 ${
-                      isActive ? 'text-stone-200' : 'text-stone-500 group-hover:text-stone-300'
-                    }`}
-                  />
-                  <span>{item.label}</span>
+                  <Icon className={`text-sm shrink-0 ${isActive ? 'text-black' : 'text-stone-500 group-hover:text-stone-300'}`} />
+                  <span className="uppercase tracking-wider">{item.label}</span>
                 </>
               )}
             </NavLink>
@@ -77,7 +73,7 @@ export default function Sidebar() {
 
       {/* User Profile & Sign Out */}
       {user && (
-        <div className="p-3 mx-3 mb-3 rounded-lg bg-stone-900/60 border border-stone-800/60 space-y-2.5">
+        <div className="p-3 mx-3 mb-3 bg-stone-950 border border-stone-700 shrink-0 space-y-2.5">
           <div className="flex items-center gap-2.5">
             <UserAvatar user={user} size="md" />
             <div className="flex-1 min-w-0">
@@ -92,7 +88,7 @@ export default function Sidebar() {
 
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-stone-800/80 hover:bg-rose-950/60 hover:text-rose-300 text-stone-400 text-[11px] font-medium transition-all border border-stone-700/60 hover:border-rose-800/40"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-stone-200 text-black text-[11px] font-extrabold uppercase tracking-wider transition-all border border-white"
             title="Sign out"
           >
             <FiLogOut className="text-xs" />
