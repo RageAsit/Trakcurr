@@ -1,37 +1,31 @@
 @import "tailwindcss";
 
 /* ================================================================
-   DESIGN TOKENS (CSS Variables)
+   TRAKCURREN — BILL PAPER DESIGN SYSTEM
    ================================================================ */
 :root {
-  --paper:       #faf8f5;
-  --paper-alt:   #f6f4ee;
-  --paper-card:  #ffffff;
+  --paper:       #faf8f2;
+  --paper-alt:   #f2eee4;
+  --paper-card:  #fffdf8;
   --ink:         #111111;
-  --ink-soft:    #27272a;
-  --ink-muted:   #71717a;
-  --ink-faint:   #a1a1aa;
-  --rule:        #e4e4e7;
-  --rule-light:  #f4f4f5;
-  --rule-dark:   #d4d4d8;
+  --ink-soft:    #272727;
+  --ink-muted:   #6b6b67;
+  --ink-faint:   #9b9a93;
+  --rule:        #d8d3c8;
+  --rule-light:  #ebe7dd;
+  --rule-dark:   #aaa59a;
   --accent-gold: #b8860b;
-  --credit:      #15803d;
+  --credit:      #166534;
   --credit-bg:   #f0fdf4;
-  --debit:       #b91c1c;
+  --debit:       #991b1b;
   --debit-bg:    #fef2f2;
-  --font-display: 'Space Grotesk', 'Sora', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-serif:   'Space Grotesk', 'Sora', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Akira Expanded', 'Arial Black', 'Space Grotesk', system-ui, sans-serif;
   --font-sans:    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono:    'IBM Plex Mono', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
-/* ================================================================
-   BASE LAYER & 8PX SPACING GRID
-   ================================================================ */
 @layer base {
-  html {
-    scroll-behavior: smooth;
-  }
+  html { scroll-behavior: smooth; }
 
   body {
     background-color: var(--paper);
@@ -44,51 +38,38 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Override Tailwind font utilities with custom typography */
-  .font-display { font-family: var(--font-display) !important; }
-  .font-serif   { font-family: var(--font-display) !important; }
-  .font-mono    { font-family: var(--font-mono) !important; }
-  .font-sans    { font-family: var(--font-sans) !important; }
+  .font-display,
+  .font-serif { font-family: var(--font-display) !important; }
+  .font-mono { font-family: var(--font-mono) !important; }
+  .font-sans { font-family: var(--font-sans) !important; }
 
-  /* Premium Crisp Scrollbar */
-  ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--rule-dark);
-    border-radius: 4px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--ink-muted);
-  }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--rule-dark); border-radius: 0; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
 }
 
 /* ================================================================
-   BILL PAPER / LEDGER BACKGROUND TEXTURES & FLOATING LEDGER
+   BILL PAPER / LEDGER SURFACE
    ================================================================ */
 .bg-workspace-draft {
-  background-color: #e8e4d8;
+  background-color: #e4dfd3;
   background-image:
-    linear-gradient(rgba(0, 0, 0, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px);
+    linear-gradient(rgba(17, 17, 17, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 17, 17, 0.045) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
 .floating-ledger-paper {
-  background-color: #faf8f5;
-  border-radius: 1.25rem;
-  border: 1px solid #d4d0c6;
-  box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.14), 0 4px 20px -4px rgba(0, 0, 0, 0.06);
+  background-color: var(--paper);
+  border-radius: 0.35rem;
+  border: 1px solid #c9c3b7;
+  box-shadow: 8px 10px 0 rgba(17, 17, 17, 0.06), 0 12px 30px rgba(17, 17, 17, 0.08);
 }
 
 .bg-bill-paper {
   background-color: var(--paper);
-  background-image:
-    linear-gradient(var(--rule-light) 1px, transparent 1px);
+  background-image: linear-gradient(var(--rule-light) 1px, transparent 1px);
   background-size: 100% 32px;
 }
 
@@ -100,57 +81,49 @@
 
 .bg-paper-card {
   background-color: var(--paper-card);
-  border: 1px solid var(--ink-soft);
-  box-shadow: 0 2px 4px rgba(28, 25, 23, 0.06);
+  border: 1px solid var(--ink);
+  box-shadow: 4px 4px 0 rgba(17, 17, 17, 0.08);
 }
 
 /* ================================================================
-   LEDGER RULES & VISUAL ANCHORS
+   LEDGER RULES / BLACK VISUAL ANCHORS
    ================================================================ */
-.double-border-bottom {
-  border-bottom: 3px double var(--ink);
+.double-border-bottom { border-bottom: 3px double var(--ink); }
+.double-border-top { border-top: 3px double var(--ink); }
+.ledger-header-rule { border-bottom: 2px solid var(--ink); }
+.ledger-total-rule { border-top: 3px double var(--ink); }
+.margin-rule-red { border-left: 2px solid rgba(185, 28, 28, 0.28); }
+.margin-rule-blue { border-left: 2px solid rgba(37, 99, 235, 0.25); }
+
+/* Every major card gets the paper + black-outline language. */
+.trak-paper-card {
+  background: var(--paper-card);
+  border: 1.5px solid var(--ink);
+  border-radius: 0.2rem;
+  box-shadow: 4px 4px 0 rgba(17, 17, 17, 0.07);
 }
 
-.double-border-top {
-  border-top: 3px double var(--rule);
+.trak-black-strip {
+  background: var(--ink);
+  color: #fff;
+  border-bottom: 1px solid var(--ink);
 }
 
-.ledger-header-rule {
-  border-bottom: 2px solid var(--ink);
+.trak-section-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.ledger-total-rule {
-  border-top: 3px double var(--ink);
-}
-
-.margin-rule-red {
-  border-left: 2px solid rgba(239, 68, 68, 0.25);
-}
-
-.margin-rule-blue {
-  border-left: 2px solid rgba(59, 130, 246, 0.25);
-}
-
-/* ================================================================
-   UTILITY CLASSES
-   ================================================================ */
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
-/* ================================================================
-   PAGE ENTRANCE ANIMATION
-   ================================================================ */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-page-enter {
